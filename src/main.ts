@@ -1,22 +1,17 @@
-import express from 'express';
-import serverless from 'serverless-http';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../src/app.module';
-import { ExpressAdapter } from '@nestjs/platform-express';
+import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const expressApp = express();
-
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
+  const app = await NestFactory.create(AppModule);
   app.enableCors();
 
   const config = new DocumentBuilder()
     .setTitle('NanoBanana API')
-    .setDescription('API для генерации изображений через NanoBanana')
+    .setDescription('API NanoBanana')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -24,10 +19,10 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.init();
+  const port = process.env.PORT || 3000;
+  await app.listen(port, () =>
+    console.log(`Server running on http://localhost:${port}`),
+  );
 }
 
 bootstrap();
-
-// ✅ default export для Vercel
-export default serverless(expressApp);

@@ -16,7 +16,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('NanoBanana API')
-    .setDescription('API для генерации изображений через NanoBanana')
+    .setDescription('API NanoBanana')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -24,10 +24,9 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.init();
+  await app.init(); // важный шаг для serverless
 }
 
 bootstrap();
 
-// ✅ default export для Vercel
 export default serverless(expressApp);
