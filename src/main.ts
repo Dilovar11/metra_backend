@@ -1,7 +1,7 @@
 import express from 'express';
 import serverless from 'serverless-http';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { AppModule } from '../src/app.module';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
@@ -25,14 +25,9 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   await app.init();
-
-  if (!process.env.VERCEL) {
-    const port = process.env.PORT || 3000;
-    await app.listen(port, () => console.log(`Server running on http://localhost:${port}`));
-  }
 }
 
 bootstrap();
 
-// ✅ Экспортируем handler всегда для Vercel
-export const handler = serverless(expressApp);
+// ✅ default export для Vercel
+export default serverless(expressApp);
