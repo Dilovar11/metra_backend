@@ -55,7 +55,7 @@ dotenv.config();
       ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
 
       synchronize: true,
-      logging: true,
+      logging: false,
 
       entities: [
         Avatar,
