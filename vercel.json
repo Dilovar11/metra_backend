@@ -1,9 +1,8 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "src/main.server.ts", "use": "@vercel/node" }
-  ],
-  "routes": [
-    { "src": "/(.*)", "dest": "src/main.server.ts" }
-  ]
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "nodejs18.x"
+    }
+  }
 }
