@@ -8,17 +8,10 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const isServerless = !!process.env.VERCEL;
 const expressApp = express();
 
 async function bootstrap() {
-  let app;
-  if (isServerless) {
-    app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
-  } else {
-    app = await NestFactory.create(AppModule);
-  }
-
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
   app.enableCors();
 
   const config = new DocumentBuilder()
@@ -31,9 +24,9 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  if (isServerless) {
-    await app.init();
-  } else {
+  await app.init();
+
+  if (!process.env.VERCEL) {
     const port = process.env.PORT || 3000;
     await app.listen(port, () => console.log(`Server running on http://localhost:${port}`));
   }
@@ -41,4 +34,5 @@ async function bootstrap() {
 
 bootstrap();
 
-export const handler = isServerless ? serverless(expressApp) : undefined;
+// ✅ Экспортируем handler всегда для Vercel
+export const handler = serverless(expressApp);
