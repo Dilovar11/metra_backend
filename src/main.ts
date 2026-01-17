@@ -1,12 +1,17 @@
+import express from 'express';
+import serverless from 'serverless-http';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { AppModule } from '../src/app.module';
+import { ExpressAdapter } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
 
+const expressApp = express();
+
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
   app.enableCors();
 
   const config = new DocumentBuilder()
@@ -19,10 +24,9 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  const port = process.env.PORT || 3000;
-  await app.listen(port, () =>
-    console.log(`Server running on http://localhost:${port}`),
-  );
+  await app.init(); // важный шаг для serverless
 }
 
 bootstrap();
+
+export default serverless(expressApp);
