@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Referral } from 'src/Entities/referral.entity';
-import { User } from 'src/Entities/user.entity';
+import { Referral } from '../../Entities/referral.entity';
+import { User } from '../../Entities/user.entity';
 import { CreateReferralDto } from './dto/create-referral.dto';
 
 @Injectable()

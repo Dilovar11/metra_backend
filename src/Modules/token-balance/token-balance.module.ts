@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { TokenBalance } from 'src/Entities/token-balance.entity';
-import { User } from 'src/Entities/user.entity';
+import { TokenBalance } from '../../Entities/token-balance.entity';
+import { User } from '../../Entities/user.entity';
 import { TokenBalanceService } from './token-balance.service';
 import { TokenBalanceController } from './token-balance.controller';
 

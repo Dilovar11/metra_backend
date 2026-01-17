@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Subscription } from 'src/Entities/subscription.entity';
-import { User } from 'src/Entities/user.entity';
+import { Subscription } from '../../Entities/subscription.entity';
+import { User } from '../../Entities/user.entity';
 import { SubscriptionService } from './subscription.service';
 import { SubscriptionController } from './subscription.controller';
 

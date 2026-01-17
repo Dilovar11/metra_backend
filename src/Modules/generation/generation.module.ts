@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Generation } from 'src/Entities/generation.entity';
-import { GenerationMedia } from 'src/Entities/generation-media.entity';
-import { User } from 'src/Entities/user.entity';
+import { Generation } from '../../Entities/generation.entity';
+import { GenerationMedia } from '../../Entities/generation-media.entity';
+import { User } from '../../Entities/user.entity';
 import { GenerationService } from './generation.service';
 import { GenerationController } from './generation.controller';
 

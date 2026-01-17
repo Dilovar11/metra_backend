@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Generation } from 'src/Entities/generation.entity';
-import { User } from 'src/Entities/user.entity';
+import { Generation } from '../../Entities/generation.entity';
+import { User } from '../../Entities/user.entity';
 import { CreateGenerationDto } from './dto/create-generation.dto';
 import { UpdateGenerationStatusDto } from './dto/update-generation-status.dto';
 

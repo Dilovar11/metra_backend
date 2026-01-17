@@ -5,9 +5,9 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { TokenTransaction } from 'src/Entities/token-transaction.entity';
-import { TokenBalance } from 'src/Entities/token-balance.entity';
-import { User } from 'src/Entities/user.entity';
+import { TokenTransaction } from '../../Entities/token-transaction.entity';
+import { TokenBalance } from '../../Entities/token-balance.entity';
+import { User } from '../../Entities/user.entity';
 import { CreateTokenTransactionDto } from './dto/create-token-transaction.dto';
 
 @Injectable()

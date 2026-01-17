@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Referral } from 'src/Entities/referral.entity';
-import { User } from 'src/Entities/user.entity';
+import { Referral } from '../../Entities/referral.entity';
+import { User } from '../../Entities/user.entity';
 import { ReferralService } from './referral.service';
 import { ReferralController } from './referral.controller';
 

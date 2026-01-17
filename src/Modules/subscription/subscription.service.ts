@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Subscription } from 'src/Entities/subscription.entity';
-import { User } from 'src/Entities/user.entity';
+import { Subscription } from '../../Entities/subscription.entity';
+import { User } from '../../Entities/user.entity';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 

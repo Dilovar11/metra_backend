@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { SupportTicket } from 'src/Entities/support-ticket.entity';
-import { User } from 'src/Entities/user.entity';
+import { SupportTicket } from '../../Entities/support-ticket.entity';
+import { User } from '../../Entities/user.entity';
 import { CreateSupportTicketDto } from './dto/create-support-ticket.dto';
 import { UpdateSupportTicketDto } from './dto/update-support-ticket.dto';
 
