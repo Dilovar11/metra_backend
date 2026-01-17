@@ -45,7 +45,7 @@ export class UsersController {
   @ApiParam({ name: 'id', description: 'ID пользователя' })
   @ApiBody({ type: User })
   @ApiResponse({ status: 200, description: 'Пользователь обновлён', type: User })
-  update(@Param('id') id: string, @Body() updateData: Partial<User>): Promise<User | null> {
+  update(@Param('id') id: string, @Body() updateData: CreateUserDto): Promise<User | null> {
     return this.usersService.update(id, updateData);
   }
 
