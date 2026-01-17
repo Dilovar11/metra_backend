@@ -1,34 +1,29 @@
-import express from 'express';
-import serverless from 'serverless-http';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import serverlessExpress from '@vendia/serverless-express';
+import express from 'express';
 
-const expressApp = express();
+let cachedServer: any;
 
-let cachedHandler: any;
-
-async function bootstrapServer() {
-  if (!cachedHandler) {
+async function bootstrap() {
+  if (!cachedServer) {
+    const expressApp = express();
     const app = await NestFactory.create(
       AppModule,
-      new ExpressAdapter(expressApp),
+      new ExpressAdapter(expressApp)
     );
 
     app.enableCors();
-
-
-
+    // Swagger лучше отключить здесь для теста, чтобы исключить его влияние
     await app.init();
 
-    cachedHandler = serverless(expressApp);
+    cachedServer = serverlessExpress({ app: expressApp });
   }
-
-  return cachedHandler;
+  return cachedServer;
 }
 
-export default async function handler(req, res) {
-  const server = await bootstrapServer();
+export default async (req: any, res: any) => {
+  const server = await bootstrap();
   return server(req, res);
-}
+};

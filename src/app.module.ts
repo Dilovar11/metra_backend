@@ -33,7 +33,8 @@ import { TokenTransactionModule } from './Modules/token-transaction/token-transa
       logging: false,
 
       extra: {
-        max: 5, // важно для Neon
+        max: 5,
+        connectionTimeoutMillis: 5000, // не ждать базу вечно
       },
     }),
 
@@ -51,4 +52,4 @@ import { TokenTransactionModule } from './Modules/token-transaction/token-transa
     TokenTransactionModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }
