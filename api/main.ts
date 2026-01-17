@@ -27,10 +27,16 @@ async function bootstrap() {
 
     const document = SwaggerModule.createDocument(app, config);
 
-    // ВАЖНО: Добавьте customSiteTitle или другие опции, 
-    // чтобы форсировать правильную инициализацию
+    // Ссылки на официальные файлы Swagger UI в CDN
+    const CSS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css';
+    const JS_URLS = [
+      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.js',
+    ];
+
     SwaggerModule.setup('api', app, document, {
-      useGlobalPrefix: false, // если у вас нет глобального префикса
+      customCssUrl: CSS_URL,
+      customJs: JS_URLS,
     });
 
     await app.init();
