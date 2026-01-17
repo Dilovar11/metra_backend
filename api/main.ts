@@ -16,7 +16,8 @@ async function bootstrap() {
     );
 
     app.enableCors();
-    
+
+    // Настройка Swagger
     const config = new DocumentBuilder()
       .setTitle('METRA API')
       .setDescription('METRA')
@@ -25,11 +26,14 @@ async function bootstrap() {
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api', app, document);
+
+    // ВАЖНО: Добавьте customSiteTitle или другие опции, 
+    // чтобы форсировать правильную инициализацию
+    SwaggerModule.setup('api', app, document, {
+      useGlobalPrefix: false, // если у вас нет глобального префикса
+    });
 
     await app.init();
-    
-    // Сохраняем именно expressApp, Vercel будет использовать его напрямую
     cachedApp = expressApp;
   }
   return cachedApp;
