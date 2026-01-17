@@ -7,7 +7,7 @@ import { CreateUserDto } from './dto/create.dto';
 @ApiTags('Users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Get()
   @ApiOperation({ summary: 'Получить всех пользователей' })
@@ -34,7 +34,7 @@ export class UsersController {
 
   @Post()
   @ApiOperation({ summary: 'Создать нового пользователя' })
-  @ApiBody({ type: User })
+  @ApiBody({ type: CreateUserDto })
   @ApiResponse({ status: 201, description: 'Пользователь создан', type: User })
   create(@Body() userData: CreateUserDto): Promise<User> {
     return this.usersService.create(userData);
@@ -43,7 +43,7 @@ export class UsersController {
   @Put(':id')
   @ApiOperation({ summary: 'Обновить пользователя по ID' })
   @ApiParam({ name: 'id', description: 'ID пользователя' })
-  @ApiBody({ type: User })
+  @ApiBody({ type: CreateUserDto }) 
   @ApiResponse({ status: 200, description: 'Пользователь обновлён', type: User })
   update(@Param('id') id: string, @Body() updateData: CreateUserDto): Promise<User | null> {
     return this.usersService.update(id, updateData);
