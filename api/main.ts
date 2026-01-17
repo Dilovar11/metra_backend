@@ -4,29 +4,39 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import * as dotenv from 'dotenv';
-
-dotenv.config();
 
 const expressApp = express();
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
-  app.enableCors();
+let cachedHandler: any;
 
-  const config = new DocumentBuilder()
-    .setTitle('NanoBanana API')
-    .setDescription('API NanoBanana')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
+async function bootstrapServer() {
+  if (!cachedHandler) {
+    const app = await NestFactory.create(
+      AppModule,
+      new ExpressAdapter(expressApp),
+    );
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+    app.enableCors();
 
-  await app.init(); // важный шаг для serverless
+    const config = new DocumentBuilder()
+      .setTitle('NanoBanana API')
+      .setDescription('API NanoBanana')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api', app, document);
+
+    await app.init();
+
+    cachedHandler = serverless(expressApp);
+  }
+
+  return cachedHandler;
 }
 
-bootstrap();
-
-export default serverless(expressApp);
+export default async function handler(req, res) {
+  const server = await bootstrapServer();
+  return server(req, res);
+}
