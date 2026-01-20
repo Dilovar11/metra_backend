@@ -2,17 +2,16 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, IsUrl } from 'class-validator';
 
 export class UpdateAvatarDto {
-
-
   @ApiPropertyOptional({
-    example: 'Avatar',
+    example: 'New Avatar Name',
     description: 'Имя аватара',
   })
+  @IsOptional() 
   @IsString()
-  name: string;
+  name?: string; 
 
   @ApiPropertyOptional({
-    example: 'male',
+    example: 'female',
     description: 'Пол персонажа',
   })
   @IsOptional()
