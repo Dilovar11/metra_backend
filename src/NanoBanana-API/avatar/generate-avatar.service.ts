@@ -8,8 +8,9 @@ export class AvatarGeneratorService {
     private genAI: GoogleGenerativeAI;
     private readonly IMAGEN_MODEL = 'imagen-3';
 
-    constructor(private readonly apiKey = process.env.GOOGLE_GEN_AI_KEY) {
-        this.genAI = new GoogleGenerativeAI(this.apiKey!);
+    constructor() {
+        const apiKey = process.env.GOOGLE_GEN_AI_KEY
+        this.genAI = new GoogleGenerativeAI(apiKey!);
     }
 
     private async getBase64ImageFromUrl(url: string): Promise<string> {
@@ -23,7 +24,7 @@ export class AvatarGeneratorService {
     }
 
     async generateAvatar(dto: any): Promise<string[]> {
-        const model = this.genAI.getGenerativeModel({ model: 'imagen-3' });
+        const model = this.genAI.getGenerativeModel({ model: this.IMAGEN_MODEL });
 
         const [img1, img2, img3] = await Promise.all([
             this.getBase64ImageFromUrl(dto.imageFront),
