@@ -6,7 +6,7 @@ import { GenerateAvatarDto } from './dto/generate-avatar.dto';
 @Injectable()
 export class AvatarGeneratorService {
     private genAI: GoogleGenerativeAI;
-    private readonly IMAGEN_MODEL = 'gemini-2.5-flash-image';
+    private readonly IMAGEN_MODEL = 'gemini-1.5-flash';
 
     constructor() {
         const apiKey = process.env.GOOGLE_GEN_AI_KEY
