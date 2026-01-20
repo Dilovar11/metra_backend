@@ -34,7 +34,7 @@ import { TokenTransactionModule } from './Modules/token-transaction/token-transa
 
       extra: {
         max: 5,
-        connectionTimeoutMillis: 5000, // не ждать базу вечно
+        connectionTimeoutMillis: 5000, 
       },
     }),
 

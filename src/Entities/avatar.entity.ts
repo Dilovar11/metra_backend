@@ -17,13 +17,7 @@ export class Avatar {
   gender: string;
 
   @Column()
-  imageFront: string;
-
-  @Column()
-  imageLeft: string;
-
-  @Column()
-  imageRight: string;
+  imageURL: string;
 
   @CreateDateColumn()
   createdAt: Date;

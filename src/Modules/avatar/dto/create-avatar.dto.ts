@@ -18,13 +18,5 @@ export class CreateAvatarDto {
 
   @ApiProperty({ example: 'https://cdn.example.com/front.png' })
   @IsUrl()
-  imageFront: string;
-
-  @ApiProperty({ example: 'https://cdn.example.com/left.png' })
-  @IsUrl()
-  imageLeft: string;
-
-  @ApiProperty({ example: 'https://cdn.example.com/right.png' })
-  @IsUrl()
-  imageRight: string;
+  imageURL: string;
 }

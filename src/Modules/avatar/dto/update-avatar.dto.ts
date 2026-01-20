@@ -20,25 +20,9 @@ export class UpdateAvatarDto {
 
   @ApiPropertyOptional({
     example: 'https://cdn.example.com/front_updated.png',
-    description: 'Новый URL изображения (вид спереди)',
+    description: 'Новый URL изображения',
   })
   @IsOptional()
   @IsUrl()
-  imageFront?: string;
-
-  @ApiPropertyOptional({
-    example: 'https://cdn.example.com/left_updated.png',
-    description: 'Новый URL изображения (вид слева)',
-  })
-  @IsOptional()
-  @IsUrl()
-  imageLeft?: string;
-
-  @ApiPropertyOptional({
-    example: 'https://cdn.example.com/right_updated.png',
-    description: 'Новый URL изображения (вид справа)',
-  })
-  @IsOptional()
-  @IsUrl()
-  imageRight?: string;
+  imageURL?: string;
 }
