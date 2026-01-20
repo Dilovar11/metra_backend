@@ -14,7 +14,7 @@ export class AvatarService {
 
     @InjectRepository(User)
     private userRepository: Repository<User>,
-  ) {}
+  ) { }
 
   async create(dto: CreateAvatarDto): Promise<Avatar> {
     const user = await this.userRepository.findOne({
@@ -22,13 +22,15 @@ export class AvatarService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException(`User with ID ${dto.userId} not found`);
     }
 
     const avatar = this.avatarRepository.create({
       user,
-      imageUrl: dto.imageUrl,
-      isActive: dto.isActive ?? true,
+      gender: dto.gender,
+      imageFront: dto.imageFront,
+      imageLeft: dto.imageLeft,
+      imageRight: dto.imageRight,
     });
 
     return this.avatarRepository.save(avatar);

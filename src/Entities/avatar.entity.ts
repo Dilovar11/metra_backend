@@ -9,12 +9,18 @@ export class Avatar {
   @OneToOne(() => User)
   @JoinColumn()
   user: User;
+  
+  @Column()
+  gender: string;
 
   @Column()
-  imageUrl: string;
+  imageFront: string;
 
-  @Column({ default: true })
-  isActive: boolean;
+  @Column()
+  imageLeft: string;
+
+  @Column()
+  imageRight: string;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -1,13 +1,36 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, IsUrl } from 'class-validator';
 
 export class UpdateAvatarDto {
   @ApiPropertyOptional({
-    example: 'https://cdn.example.com/avatar_new.png',
+    example: 'male',
+    description: 'Пол персонажа',
   })
-  imageUrl?: string;
+  @IsOptional()
+  @IsString()
+  gender?: string;
 
   @ApiPropertyOptional({
-    example: false,
+    example: 'https://cdn.example.com/front_updated.png',
+    description: 'Новый URL изображения (вид спереди)',
   })
-  isActive?: boolean;
+  @IsOptional()
+  @IsUrl()
+  imageFront?: string;
+
+  @ApiPropertyOptional({
+    example: 'https://cdn.example.com/left_updated.png',
+    description: 'Новый URL изображения (вид слева)',
+  })
+  @IsOptional()
+  @IsUrl()
+  imageLeft?: string;
+
+  @ApiPropertyOptional({
+    example: 'https://cdn.example.com/right_updated.png',
+    description: 'Новый URL изображения (вид справа)',
+  })
+  @IsOptional()
+  @IsUrl()
+  imageRight?: string;
 }
