@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AvatarGeneratorService } from './generate-avatar.service';
-import { AvatarController } from './avatar.controller';
+import { AvatarGeneratorController } from './generate-avatar.controller';
 
 @Module({
-  controllers: [AvatarController],
+  controllers: [AvatarGeneratorController],
   providers: [AvatarGeneratorService],
   exports: [AvatarGeneratorService],
 })
-export class AvatarModule {}
+export class AvatarGeneratorModule {}

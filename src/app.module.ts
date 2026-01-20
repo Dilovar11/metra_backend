@@ -13,6 +13,7 @@ import { SubscriptionModule } from './Modules/subscription/subscription.module';
 import { SupportTicketModule } from './Modules/support-ticket/support-ticket.module';
 import { TokenBalanceModule } from './Modules/token-balance/token-balance.module';
 import { TokenTransactionModule } from './Modules/token-transaction/token-transaction.module';
+import { AvatarGeneratorModule } from './NanoBanana-API/avatar/generate-avatar.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { TokenTransactionModule } from './Modules/token-transaction/token-transa
     SupportTicketModule,
     TokenBalanceModule,
     TokenTransactionModule,
+    AvatarGeneratorModule
   ],
 })
 export class AppModule { }

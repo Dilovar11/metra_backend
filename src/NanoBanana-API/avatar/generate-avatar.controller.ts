@@ -6,7 +6,7 @@ import { GenerateAvatarDto } from './dto/generate-avatar.dto'; // Использ
 
 @ApiTags('Аватары (AI)')
 @Controller('avatar')
-export class AvatarController {
+export class AvatarGeneratorController {
   constructor(private readonly avatarService: AvatarGeneratorService) {}
 
   @Post('generate-from-images')
