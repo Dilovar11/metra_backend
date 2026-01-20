@@ -29,7 +29,7 @@ import { TokenTransactionModule } from './Modules/token-transaction/token-transa
       },
 
       autoLoadEntities: true,
-      synchronize: false,
+      synchronize: true,
       logging: false,
 
       extra: {
