@@ -10,6 +10,14 @@ export class CreateAvatarDto {
   userId: string;
 
   @ApiProperty({
+    example: 'Avatar',
+    description: 'Имя аватара',
+  })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({
     example: 'male',
     description: 'Пол персонажа',
   })

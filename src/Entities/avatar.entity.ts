@@ -9,7 +9,10 @@ export class Avatar {
   @OneToOne(() => User)
   @JoinColumn()
   user: User;
-  
+
+  @Column()
+  name: string;
+
   @Column()
   gender: string;
 

@@ -27,6 +27,7 @@ export class AvatarService {
 
     const avatar = this.avatarRepository.create({
       user,
+      name: dto.name,
       gender: dto.gender,
       imageFront: dto.imageFront,
       imageLeft: dto.imageLeft,
