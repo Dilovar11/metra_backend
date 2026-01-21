@@ -4,12 +4,12 @@ import { AvatarGeneratorService } from './generate-avatar.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { GenerateAvatarDto } from './dto/generate-avatar.dto'; // Используем наш новый DTO
 
-@ApiTags('Аватары (AI)')
+@ApiTags('Генерировать аватар')
 @Controller('avatar')
 export class AvatarGeneratorController {
   constructor(private readonly avatarService: AvatarGeneratorService) {}
 
-  @Post('generate-from-images')
+  @Post('generate-avatar')
   @ApiOperation({ 
     summary: 'Генерация 4 новых вариантов аватара на основе 3-х существующих изображений',
     description: 'Использует 3 изображения для создания новых аватаров. Возвращает 4 изображений в формате Base64.' 

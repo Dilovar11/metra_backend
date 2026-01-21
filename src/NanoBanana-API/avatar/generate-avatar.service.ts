@@ -30,6 +30,7 @@ export class AvatarGeneratorService {
                 );
 
                 console.log('--- Mock Generation Finished Successfully ---');
+                
                 return {
                     name: dto.name,
                     gender: dto.gender, 
