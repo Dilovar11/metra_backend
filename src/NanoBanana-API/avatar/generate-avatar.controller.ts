@@ -11,8 +11,8 @@ export class AvatarGeneratorController {
 
   @Post('generate-from-images')
   @ApiOperation({ 
-    summary: 'Генерация 4 новых вариантов аватара на основе 3-х существующих изображений и пола',
-    description: 'Использует мультимодальный ввод (изображения + текст) для создания новых аватаров. Возвращает до 4 изображений в формате Base64.' 
+    summary: 'Генерация 4 новых вариантов аватара на основе 3-х существующих изображений',
+    description: 'Использует 3 изображения для создания новых аватаров. Возвращает 4 изображений в формате Base64.' 
   })
   @ApiBody({ type: GenerateAvatarDto })
   @ApiResponse({ 
@@ -24,7 +24,6 @@ export class AvatarGeneratorController {
         images: [
           'data:image/png;base64,iVBORw0KGgoAAAAN...',
           'data:image/png;base64,ABCDEFG...',
-          // ... 2 more
         ]
       }
     }
@@ -36,12 +35,12 @@ export class AvatarGeneratorController {
       const generatedImages = await this.avatarService.generateAvatar(dto);
       return {
         success: true,
-        images: generatedImages, // Массив base64 строк
+        images: generatedImages, 
       };
     } catch (error) {
       console.error('Error in controller:', error);
       if (error instanceof BadRequestException) {
-        throw error; // Propagate client-side errors
+        throw error; 
       }
       if (error.message?.includes('SAFETY')) {
         throw new BadRequestException('Запрос отклонен фильтром безопасности Google.');

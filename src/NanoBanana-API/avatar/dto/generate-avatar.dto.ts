@@ -1,6 +1,5 @@
-// src/avatar/dto/generate-avatar.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsUrl, IsEnum, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsUrl, IsEnum } from 'class-validator';
 
 // Если у вас есть enum для пола
 export enum Gender {
@@ -9,10 +8,16 @@ export enum Gender {
 }
 
 export class GenerateAvatarDto {
+
+  @ApiProperty({ example: 'My Super Avatar', description: 'Имя аватара' })
+  @IsString()
+  @IsNotEmpty()
+  name: string; 
+
   @ApiProperty({
     example: 'female',
-    description: 'Пол персонажа для генерации. Используется для доработки аватара.',
-    enum: Gender, 
+    description: 'Пол персонажа для генерации',
+    enum: Gender,
   })
   @IsEnum(Gender)
   gender: Gender;
@@ -37,13 +42,4 @@ export class GenerateAvatarDto {
   })
   @IsUrl()
   imageRight: string;
-
-  @ApiProperty({
-    example: 'Add a hat and glasses',
-    description: 'Дополнительный промпт для изменения/улучшения аватара',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  additionalPrompt?: string;
 }
