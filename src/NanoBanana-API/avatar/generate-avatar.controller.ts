@@ -5,7 +5,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { GenerateAvatarDto } from './dto/generate-avatar.dto'; // Используем наш новый DTO
 
 @ApiTags('Генерировать аватар')
-@Controller('avatar')
+@Controller('avatars')
 export class AvatarGeneratorController {
   constructor(private readonly avatarService: AvatarGeneratorService) {}
 
