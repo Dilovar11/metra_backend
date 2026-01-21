@@ -1,65 +1,41 @@
-import { Injectable, InternalServerErrorException, BadRequestException } from '@nestjs/common';
-import { GoogleGenerativeAI, Part } from '@google/generative-ai';
-import axios from 'axios';
-import { GenerateAvatarDto } from './dto/generate-avatar.dto';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { join } from 'path';
+import { promises as fs } from 'fs';
 
 @Injectable()
 export class AvatarGeneratorService {
-    private genAI: GoogleGenerativeAI;
-    private readonly IMAGEN_MODEL = 'gemini-2.0-flash';
-
-    constructor() {
-        const apiKey = process.env.GOOGLE_GEN_AI_KEY
-        this.genAI = new GoogleGenerativeAI(apiKey!);
-    }
-
-    private async getBase64ImageFromUrl(url: string): Promise<string> {
-        try {
-            const response = await axios.get(url, { responseType: 'arraybuffer' });
-            const buffer = Buffer.from(response.data, 'binary');
-            return buffer.toString('base64');
-        } catch (error) {
-            throw new BadRequestException(`Не удалось загрузить изображение по ссылке: ${url}`);
-        }
-    }
+    private readonly MOCK_IMAGES_PATH = join(process.cwd(), 'assets', 'test-images');
 
     async generateAvatar(dto: any): Promise<string[]> {
-        const model = this.genAI.getGenerativeModel({ model: this.IMAGEN_MODEL });
-
-        const [img1, img2, img3] = await Promise.all([
-            this.getBase64ImageFromUrl(dto.imageFront),
-            this.getBase64ImageFromUrl(dto.imageLeft),
-            this.getBase64ImageFromUrl(dto.imageRight),
-        ]);
-
-        const parts: Part[] = [
-            { text: `Based on these 3 views of a ${dto.gender}, generate 4 variations...` },
-            { inlineData: { mimeType: 'image/png', data: img1 } },
-            { inlineData: { mimeType: 'image/png', data: img2 } },
-            { inlineData: { mimeType: 'image/png', data: img3 } },
-        ];
+        console.log('--- Mock Generation Started ---');
+        console.log('Received DTO:', dto);
 
         try {
-            const result = await model.generateContent({
-                contents: [{ role: 'user', parts }],
-            });
+            await new Promise(resolve => setTimeout(resolve, 1500));
 
-            const response = await result.response;
-
-            const images = response.candidates!
-                .map((candidate) => {
-                    const part = candidate.content.parts[0];
-                    if (part && part.inlineData) {
-                        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-                    }
-                    return null; 
+            const imageNames = ['1.png', '2.png', '3.png', '4.png'];
+            
+            const base64Images = await Promise.all(
+                imageNames.map(async (fileName) => {
+                    const filePath = join(this.MOCK_IMAGES_PATH, fileName);
+                    
+                    // Читаем файл в буфер
+                    const fileBuffer = await fs.readFile(filePath);
+                    
+                    // Конвертируем в Base64 формат (Data URI)
+                    return `data:image/png;base64,${fileBuffer.toString('base64')}`;
                 })
-                .filter((img): img is string => img !== null); 
+            );
 
-            return images;
+            console.log('--- Mock Generation Finished Successfully ---');
+            return base64Images;
+
         } catch (error) {
-            console.error(error);
-            throw new InternalServerErrorException('Ошибка генерации через Google API');
+            console.error('Mock Service Error:', error.message);
+            // Если файлы не найдены или произошла ошибка
+            throw new InternalServerErrorException(
+                'Ошибка при чтении локальных тестовых изображений. Проверьте папку assets/test-images/'
+            );
         }
     }
 }

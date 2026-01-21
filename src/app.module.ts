@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { NanoBananaModule } from './Modules/nanobanana/nanobanana.module';
 import { UsersModule } from './Modules/user/users.module';
 import { AvatarModule } from './Modules/avatar/avatar.module';
 import { BodyPhotoModule } from './Modules/body-photo/body-photo.module';
@@ -38,8 +37,7 @@ import { AvatarGeneratorModule } from './NanoBanana-API/avatar/generate-avatar.m
         connectionTimeoutMillis: 5000, 
       },
     }),
-
-    NanoBananaModule,
+    AvatarGeneratorModule,
     UsersModule,
     AvatarModule,
     BodyPhotoModule,
@@ -51,7 +49,6 @@ import { AvatarGeneratorModule } from './NanoBanana-API/avatar/generate-avatar.m
     SupportTicketModule,
     TokenBalanceModule,
     TokenTransactionModule,
-    AvatarGeneratorModule
   ],
 })
 export class AppModule { }
