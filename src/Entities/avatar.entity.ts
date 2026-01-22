@@ -16,7 +16,7 @@ export class Avatar {
   @Column()
   gender: string;
 
-  @Column()
+  @Column("text", { array: true, default: '{}' })
   imagesURL: string[];
 
   @CreateDateColumn()
