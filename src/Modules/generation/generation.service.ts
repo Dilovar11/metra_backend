@@ -23,6 +23,8 @@ export class GenerationService {
       user,
       type: dto.type,
       prompt: dto.prompt,
+      imageURL: dto.imageURL,
+      externalTaskId: dto.externalTaskId
     });
 
     return this.generationRepo.save(generation);

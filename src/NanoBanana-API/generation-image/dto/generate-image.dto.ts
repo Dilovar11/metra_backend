@@ -2,9 +2,6 @@ import { IsString, IsNotEmpty, IsUrl } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class GenerateImageDto {
-    @ApiProperty({ description: 'ID задачи во внешней системе' })
-    @IsString()
-    externalTaskId: string;
 
     @ApiProperty({
         description: 'Текстовое описание того, что нужно сделать с изображением',

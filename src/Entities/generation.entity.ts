@@ -31,6 +31,9 @@ export class Generation {
   @Column({ nullable: true })
   prompt: string;
 
+  @Column()
+  imageURL: string;
+
   @Column({ nullable: true })
   externalTaskId: string;
 
