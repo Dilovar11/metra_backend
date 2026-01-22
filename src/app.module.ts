@@ -13,6 +13,7 @@ import { SupportTicketModule } from './Modules/support-ticket/support-ticket.mod
 import { TokenBalanceModule } from './Modules/token-balance/token-balance.module';
 import { TokenTransactionModule } from './Modules/token-transaction/token-transaction.module';
 import { AvatarGeneratorModule } from './NanoBanana-API/avatar/generate-avatar.module';
+import { ImageGeneratorModule } from './NanoBanana-API/generation-image/image-generator.module';
 
 @Module({
   imports: [
@@ -38,11 +39,12 @@ import { AvatarGeneratorModule } from './NanoBanana-API/avatar/generate-avatar.m
       },
     }),
     AvatarGeneratorModule,
-    UsersModule,
     AvatarModule,
+    ImageGeneratorModule,
+    GenerationModule,
+    UsersModule,
     BodyPhotoModule,
     GenerationMediaModule,
-    GenerationModule,
     PurchaseModule,
     ReferralModule,
     SubscriptionModule,

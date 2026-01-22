@@ -11,9 +11,9 @@ export class AvatarController {
   constructor(private readonly avatarService: AvatarService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Создать аватар пользователю' })
+  @ApiOperation({ summary: 'Сохранить генерированных аватаров' })
   @ApiBody({ type: CreateAvatarDto })
-  @ApiResponse({ status: 201, description: 'Аватар создан', type: Avatar })
+  @ApiResponse({ status: 201, description: 'Аватар(ы) сохранен(ы)', type: Avatar })
   create(@Body() dto: CreateAvatarDto): Promise<Avatar> {
     return this.avatarService.create(dto);
   }
