@@ -7,7 +7,7 @@ export class CreateGenerationDto {
   @IsString()
   externalTaskId: string;
 
-  @ApiProperty({ enum: GenerationType, description: 'Тип контента' })
+  @ApiProperty({ enum: GenerationType, description: 'Тип контента например: nano_banana' })
   @IsEnum(GenerationType)
   type: GenerationType;
 

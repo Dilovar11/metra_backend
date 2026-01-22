@@ -25,6 +25,7 @@ export class ImageGeneratorController {
                 originalImage: 'https://example.com/photo.jpg',
                 processedImage: 'https://encrypted-tbn3.gstatic.com/...',
                 metadata: {
+                    type: "nano_banana",
                     prompt: 'Anime style',
                     timestamp: '2026-01-22T12:00:00Z'
                 }

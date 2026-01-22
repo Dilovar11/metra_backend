@@ -17,6 +17,7 @@ export class ImageGeneratorService {
             originalImage: dto.image,
             processedImage: this.RESULT_URL,
             metadata: {
+                type: dto.type,
                 prompt: dto.prompt,
                 timestamp: new Date().toISOString()
             }
