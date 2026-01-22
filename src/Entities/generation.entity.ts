@@ -31,9 +31,6 @@ export class Generation {
   @Column({ nullable: true })
   prompt: string;
 
-  @Column({ default: 'pending' })
-  status: 'pending' | 'processing' | 'done' | 'failed';
-
   @Column({ nullable: true })
   externalTaskId: string;
 

@@ -4,11 +4,11 @@ import { ImageGeneratorService } from './image-generator.service';
 import { GenerateImageDto } from './dto/generate-image.dto';
 
 @ApiTags('Генерация изображений') 
-@Controller('generate-image')
+@Controller('generations')
 export class ImageGeneratorController {
     constructor(private readonly imageService: ImageGeneratorService) {}
 
-    @Post('process')
+    @Post('generate-image')
     @UsePipes(new ValidationPipe())
     @ApiOperation({ 
         summary: 'Обработка изображения по описанию', 
@@ -21,6 +21,7 @@ export class ImageGeneratorController {
         schema: {
             example: {
                 status: 'success',
+                externalTaskId: 'w0-e29b-41d4-a716-4',
                 originalImage: 'https://example.com/photo.jpg',
                 processedImage: 'https://encrypted-tbn3.gstatic.com/...',
                 metadata: {

@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { Generation } from '../../Entities/generation.entity';
 import { User } from '../../Entities/user.entity';
 import { CreateGenerationDto } from './dto/create-generation.dto';
-import { UpdateGenerationStatusDto } from './dto/update-generation-status.dto';
 
 @Injectable()
 export class GenerationService {
@@ -41,13 +40,5 @@ export class GenerationService {
       where: { user: { id: userId } },
       relations: ['media'],
     });
-  }
-
-  async updateStatus(id: string, dto: UpdateGenerationStatusDto) {
-    const generation = await this.generationRepo.findOne({ where: { id } });
-    if (!generation) throw new NotFoundException('Generation not found');
-
-    Object.assign(generation, dto);
-    return this.generationRepo.save(generation);
   }
 }

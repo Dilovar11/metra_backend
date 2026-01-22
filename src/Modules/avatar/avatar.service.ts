@@ -29,7 +29,7 @@ export class AvatarService {
       user,
       name: dto.name,
       gender: dto.gender,
-      imageURL: dto.imageURL,
+      imagesURL: dto.imagesURL,
     });
 
     return this.avatarRepository.save(avatar);

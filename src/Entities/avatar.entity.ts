@@ -6,7 +6,7 @@ export class Avatar {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToOne(() => User)
+  @OneToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn()
   user: User;
 
@@ -17,7 +17,7 @@ export class Avatar {
   gender: string;
 
   @Column()
-  imageURL: string;
+  imagesURL: string[];
 
   @CreateDateColumn()
   createdAt: Date;
