@@ -22,8 +22,8 @@ export class AvatarGeneratorController {
       example: {
         success: true,
         images: [
-          'data:image/png;base64,iVBORw0KGgoAAAAN...',
-          'data:image/png;base64,ABCDEFG...',
+          'https://example.com/photo1.jpg',
+          'https://example.com/photo2.jpg',
         ]
       }
     }
