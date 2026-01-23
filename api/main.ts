@@ -3,8 +3,6 @@ import { AppModule } from '../src/app.module';
 import { ExpressAdapter, NestExpressApplication } from '@nestjs/platform-express';
 import express from 'express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
 
 let cachedApp: any;
 

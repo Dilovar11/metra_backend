@@ -8,9 +8,9 @@ export class FilesService {
   constructor() {
     // Рекомендую вынести это в .env
     cloudinary.config({
-      cloud_name: 'ВАШ_CLOUD_NAME', 
-      api_key: 'ВАШ_API_KEY',
-      api_secret: 'ВАШ_API_SECRET',
+      cloud_name: 'dncehtdoz', 
+      api_key: '684895585518196',
+      api_secret: '2Tmko7KRqC4ioUHKIJvecAekvQk',
     });
   }
 
