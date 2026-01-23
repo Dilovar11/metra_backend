@@ -19,15 +19,6 @@ async function bootstrap() {
 
     app.enableCors();
 
-
-    const uploadDir = join(__dirname, '..', 'uploads');
-    if (!existsSync(uploadDir)) {
-      mkdirSync(uploadDir, { recursive: true });
-    }
-    app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-      prefix: '/uploads/',
-    });
-
     // Настройка Swagger
     const config = new DocumentBuilder()
       .setTitle('METRA API')

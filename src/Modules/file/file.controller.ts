@@ -1,3 +1,4 @@
+// file.controller.ts
 import { 
   Controller, 
   Post, 
@@ -6,8 +7,7 @@ import {
   BadRequestException 
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { memoryStorage } from 'multer';
 import { FilesService } from './file.service';
 import { ApiTags, ApiConsumes, ApiBody } from '@nestjs/swagger';
 
@@ -30,16 +30,8 @@ export class FilesController {
     },
   })
   @UseInterceptors(
-    FilesInterceptor('files', 10, { // 'files' - имя ключа, 10 - макс. количество
-      storage: diskStorage({
-        destination: './uploads', 
-        filename: (req, file, callback) => {
-          // Генерируем уникальное имя: timestamp + рандом + расширение
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          callback(null, `${uniqueSuffix}${ext}`);
-        },
-      }),
+    FilesInterceptor('files', 10, {
+      storage: memoryStorage(), // Используем память вместо диска
       fileFilter: (req, file, callback) => {
         if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
           return callback(new BadRequestException('Only images are allowed!'), false);
@@ -48,10 +40,11 @@ export class FilesController {
       },
     }),
   )
-  uploadMultipleFiles(@UploadedFiles() files: Array<Express.Multer.File>) {
+  async uploadMultipleFiles(@UploadedFiles() files: Array<Express.Multer.File>) {
     if (!files || files.length === 0) {
       throw new BadRequestException('No files uploaded');
     }
-    return this.filesService.saveFiles(files);
+    // Вызываем асинхронную загрузку
+    return await this.filesService.saveFiles(files);
   }
 }
