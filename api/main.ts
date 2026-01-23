@@ -1,21 +1,32 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
-import { ExpressAdapter } from '@nestjs/platform-express';
+import { ExpressAdapter, NestExpressApplication } from '@nestjs/platform-express';
 import express from 'express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 
-// Глобальная переменная для кэширования инстанса (предотвращает повторную инициализацию)
 let cachedApp: any;
 
 async function bootstrap() {
   if (!cachedApp) {
     const expressApp = express();
-    const app = await NestFactory.create(
+
+    const app = await NestFactory.create<NestExpressApplication>(
       AppModule,
       new ExpressAdapter(expressApp)
     );
 
     app.enableCors();
+
+
+    const uploadDir = join(__dirname, '..', 'uploads');
+    if (!existsSync(uploadDir)) {
+      mkdirSync(uploadDir, { recursive: true });
+    }
+    app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+      prefix: '/uploads/',
+    });
 
     // Настройка Swagger
     const config = new DocumentBuilder()

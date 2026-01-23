@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
 import { UsersModule } from './Modules/user/users.module';
 import { AvatarModule } from './Modules/avatar/avatar.module';
 import { BodyPhotoModule } from './Modules/body-photo/body-photo.module';
@@ -14,6 +13,7 @@ import { TokenBalanceModule } from './Modules/token-balance/token-balance.module
 import { TokenTransactionModule } from './Modules/token-transaction/token-transaction.module';
 import { AvatarGeneratorModule } from './NanoBanana-API/avatar/generate-avatar.module';
 import { ImageGeneratorModule } from './NanoBanana-API/generation-image/image-generator.module';
+import { FilesModule } from './Modules/file/file.module';
 
 @Module({
   imports: [
@@ -44,6 +44,7 @@ import { ImageGeneratorModule } from './NanoBanana-API/generation-image/image-ge
     GenerationModule,
     TokenBalanceModule,
     TokenTransactionModule,
+    FilesModule,
     UsersModule,
     BodyPhotoModule,
     GenerationMediaModule,
