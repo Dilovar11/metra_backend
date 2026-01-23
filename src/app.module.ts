@@ -42,6 +42,8 @@ import { ImageGeneratorModule } from './NanoBanana-API/generation-image/image-ge
     AvatarModule,
     ImageGeneratorModule,
     GenerationModule,
+    TokenBalanceModule,
+    TokenTransactionModule,
     UsersModule,
     BodyPhotoModule,
     GenerationMediaModule,
@@ -49,8 +51,6 @@ import { ImageGeneratorModule } from './NanoBanana-API/generation-image/image-ge
     ReferralModule,
     SubscriptionModule,
     SupportTicketModule,
-    TokenBalanceModule,
-    TokenTransactionModule,
   ],
 })
 export class AppModule { }
