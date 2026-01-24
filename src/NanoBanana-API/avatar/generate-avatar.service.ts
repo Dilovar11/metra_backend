@@ -8,7 +8,7 @@ export class AvatarGeneratorService {
         console.log('Received DTO:', dto);
 
         try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 1));
 
             if (dto.name && dto.gender && dto.imageFront && dto.imageLeft && dto.imageRight) {
                 
