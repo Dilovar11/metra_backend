@@ -12,18 +12,17 @@ export class FilesService {
     });
   }
 
-  async uploadToCloudinary(file: Express.Multer.File): Promise<any> {
+  async uploadToCloudinary(file: Express.Multer.File, folder: string): Promise<any> {
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
-          folder: 'metra_uploads', // Можно указать папку в Cloudinary
+          folder: folder, 
         },
         (error, result) => {
           if (error) return reject(error);
           resolve(result);
         },
       );
-
       // Создаем поток из буфера файла напрямую через встроенный Readable
       const stream = new Readable();
       stream.push(file.buffer);
@@ -32,8 +31,8 @@ export class FilesService {
     });
   }
 
-  async saveFiles(files: Array<Express.Multer.File>) {
-    const uploadPromises = files.map((file) => this.uploadToCloudinary(file));
+  async saveFileAvatar(files: Array<Express.Multer.File>) {
+    const uploadPromises = files.map((file) => this.uploadToCloudinary(file, 'metra_avatars'));
     const results = await Promise.all(uploadPromises);
 
     return results.map((result, index) => ({

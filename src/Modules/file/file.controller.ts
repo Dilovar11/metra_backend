@@ -40,11 +40,12 @@ export class FilesController {
       },
     }),
   )
-  async uploadMultipleFiles(@UploadedFiles() files: Array<Express.Multer.File>) {
+
+  async uploadFileAvatar(@UploadedFiles() files: Array<Express.Multer.File>) {
     if (!files || files.length === 0) {
       throw new BadRequestException('No files uploaded');
     }
     // Вызываем асинхронную загрузку
-    return await this.filesService.saveFiles(files);
+    return await this.filesService.saveFileAvatar(files);
   }
 }
