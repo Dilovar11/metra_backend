@@ -1,23 +1,28 @@
-// file.service.ts
 import { Injectable } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
 import { Readable } from 'stream';
 
 @Injectable()
 export class FilesService {
-  // ... конструктор с cloudinary.config как раньше
+  constructor() {
+    cloudinary.config({
+      cloud_name: 'dncehtdoz',
+      api_key: '684895585518196',
+      api_secret: '2Tmko7KRqC4ioUHKIJvecAekvQk',
+    });
+  }
 
   private async uploadToCloudinary(
-    file: Express.Multer.File, 
-    folder: string, 
+    file: Express.Multer.File,
+    folder: string,
     customFileName: string
   ): Promise<any> {
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
-          folder: folder,        // Директория: metra_avatars/userId
-          public_id: customFileName, // Имя файла: d1dsr0
-          overwrite: true,       // Перезаписывать, если файл с таким именем уже есть
+          folder: folder,  
+          public_id: customFileName, 
+          overwrite: true,      
         },
         (error, result) => {
           if (error) return reject(error);
@@ -33,7 +38,6 @@ export class FilesService {
   }
 
   async saveFileAvatar(files: Array<Express.Multer.File>, userId: string) {
-
     const userFolder = `metra_avatars/${userId}`;
     const uploadPromises = files.map((file, index) => {
       const customFileName = `${userId}${index}`;
