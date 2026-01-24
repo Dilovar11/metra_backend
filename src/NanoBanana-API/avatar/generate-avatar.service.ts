@@ -19,7 +19,7 @@ export class AvatarGeneratorService {
                 return {
                     name: dto.name,
                     gender: dto.gender, 
-                    images: [
+                    imagesURL: [
                         successImageUrl,
                         successImageUrl,
                         successImageUrl,
