@@ -20,9 +20,9 @@ export class FilesService {
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
-          folder: folder,  
-          public_id: customFileName, 
-          overwrite: true,      
+          folder: folder,
+          public_id: customFileName,
+          overwrite: true,
         },
         (error, result) => {
           if (error) return reject(error);
@@ -38,6 +38,23 @@ export class FilesService {
   }
 
   async saveFileAvatar(files: Array<Express.Multer.File>, userId: string) {
+    const userFolder = `metra_files_for_avatars`;
+    const uploadPromises = files.map((file, index) => {
+      const customFileName = `${userId}${index}`;
+      return this.uploadToCloudinary(file, userFolder, customFileName);
+    });
+
+    const results = await Promise.all(uploadPromises);
+
+    return results.map((result, index) => ({
+      originalName: files[index].originalname,
+      filename: result.public_id,
+      url: result.secure_url,
+    }));
+  }
+
+
+  async saveFileGeneratedAvatars(files: Array<Express.Multer.File>, userId: string) {
     const userFolder = `metra_avatars/${userId}`;
     const uploadPromises = files.map((file, index) => {
       const customFileName = `${userId}${index}`;
@@ -48,8 +65,27 @@ export class FilesService {
 
     return results.map((result, index) => ({
       originalName: files[index].originalname,
-      filename: result.public_id, 
+      filename: result.public_id,
       url: result.secure_url,
     }));
+  }
+
+
+  async saveFileGeneratedAvatarByIndex(file: Express.Multer.File, userId: string, index: number) {
+
+    const userFolder = `metra_avatars/${userId}`;
+    const customFileName = `${userId}${index}`;
+
+    try {
+      const result = await this.uploadToCloudinary(file, userFolder, customFileName);
+      return {
+        originalName: file.originalname,
+        filename: result.public_id,
+        url: result.secure_url,
+        index: index
+      };
+    } catch (error) {
+      throw new Error(`Ошибка загрузки файла под индексом ${index}: ${error.message}`);
+    }
   }
 }
