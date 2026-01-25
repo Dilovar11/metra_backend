@@ -13,12 +13,13 @@ import { memoryStorage } from 'multer';
 import { FilesService } from './file.service';
 import { ApiTags, ApiConsumes, ApiBody, ApiParam, ApiOperation } from '@nestjs/swagger';
 
-@ApiTags('Загрузка файлов (images) на cloudinary')
+@ApiTags('Загрузка файлов (images) на сервере cloudinary')
 @Controller('files')
 export class FilesController {
   constructor(private readonly filesService: FilesService) { }
 
-  @Post('avatar/:userId') // Добавляем userId в путь
+  @Post('avatar/:userId') 
+  @ApiOperation({ summary: 'Сохранение файлов фото пользователя для генерации аватаров' })
   @ApiConsumes('multipart/form-data')
   @ApiParam({ name: 'userId', description: 'ID пользователя для создания папки и именования файлов' })
   @ApiBody({
@@ -57,6 +58,7 @@ export class FilesController {
 
 
   @Post('generated-avatar/:userId') 
+  @ApiOperation({ summary: 'Сохранение файлов выбранных аватаров' })
   @ApiConsumes('multipart/form-data')
   @ApiParam({ name: 'userId', description: 'ID пользователя для создания папки и именования файлов' })
   @ApiBody({
@@ -94,7 +96,7 @@ export class FilesController {
 
 
   @Post('generated-avatar/:userId/:index')
-  @ApiOperation({ summary: 'Загрузка одного фото под конкретным индексом' })
+  @ApiOperation({ summary: 'Сохранение файла выбранного аватара под конкретным индексом' })
   @ApiConsumes('multipart/form-data')
   @ApiParam({ name: 'userId', description: 'ID пользователя' })
   @ApiParam({ name: 'index', description: 'Индекс фото (0, 1, 2...)' })
