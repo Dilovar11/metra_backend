@@ -53,6 +53,18 @@ export class AvatarService {
     return this.avatarRepository.findOne({ where: { id } });
   }
 
+  async addImgUrl(userId: string, newImageUrl: string): Promise<Avatar> {
+    const avatar = await this.avatarRepository.findOne({
+      where: { user: { id: userId } }
+    });
+
+    if (!avatar) {
+      throw new NotFoundException(`Avatar for user ${userId} not found`);
+    }
+    avatar.imagesURL = [...(avatar.imagesURL || []), newImageUrl];
+    return await this.avatarRepository.save(avatar);
+  }
+
   async remove(id: string): Promise<void> {
     await this.avatarRepository.delete(id);
   }

@@ -24,5 +24,5 @@ export class UpdateAvatarDto {
   })
   @IsOptional()
   @IsUrl()
-  imageURL?: string;
+  imagesURL: string[];
 }

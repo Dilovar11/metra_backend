@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Put, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Post, Patch, Get, Put, Delete, Body, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { AvatarService } from './avatar.service';
 import { Avatar } from '../../Entities/avatar.entity';
@@ -8,7 +8,7 @@ import { UpdateAvatarDto } from './dto/update-avatar.dto';
 @ApiTags('Avatars')
 @Controller('avatars')
 export class AvatarController {
-  constructor(private readonly avatarService: AvatarService) {}
+  constructor(private readonly avatarService: AvatarService) { }
 
   @Post()
   @ApiOperation({ summary: 'Сохранить генерированных аватаров' })
@@ -43,6 +43,14 @@ export class AvatarController {
     @Body() dto: UpdateAvatarDto,
   ): Promise<Avatar | null> {
     return this.avatarService.update(id, dto);
+  }
+
+  @Patch('add/:userId')
+  async addImage(
+    @Param('userId') userId: string,
+    @Body('url') url: string
+  ) {
+    return await this.avatarService.addImgUrl(userId, url);
   }
 
   @Delete(':id')
