@@ -18,7 +18,7 @@ import { ApiTags, ApiConsumes, ApiBody, ApiParam, ApiOperation } from '@nestjs/s
 export class FilesController {
   constructor(private readonly filesService: FilesService) { }
 
-  @Post('avatar/:userId') 
+  @Post('avatar/:userId')
   @ApiOperation({ summary: 'Сохранение файлов фото пользователя для генерации аватаров' })
   @ApiConsumes('multipart/form-data')
   @ApiParam({ name: 'userId', description: 'ID пользователя для создания папки и именования файлов' })
@@ -57,7 +57,7 @@ export class FilesController {
 
 
 
-  @Post('generated-avatar/:userId') 
+  @Post('generated-avatar/:userId')
   @ApiOperation({ summary: 'Сохранение файлов выбранных аватаров' })
   @ApiConsumes('multipart/form-data')
   @ApiParam({ name: 'userId', description: 'ID пользователя для создания папки и именования файлов' })
@@ -133,5 +133,81 @@ export class FilesController {
     }
 
     return await this.filesService.saveFileGeneratedAvatarByIndex(file, userId, numericIndex);
+  }
+
+
+
+
+
+  @Post('save-for-generation/:userId')
+  @ApiOperation({ summary: 'Сохранение файла (изображение) пользователя для генерации' })
+  @ApiConsumes('multipart/form-data')
+  @ApiParam({ name: 'userId', description: 'ID пользователя для создания папки и именования файла' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { // Переименовали в единственное число для логики
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', { 
+      storage: memoryStorage(),
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
+          return callback(new BadRequestException('Only images are allowed!'), false);
+        }
+        callback(null, true);
+      },
+    }),
+  )
+  async uploadFileForGeneration(
+    @UploadedFile() file: Express.Multer.File,
+    @Param('userId') userId: string
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+    return await this.filesService.saveFileImage(file, userId);
+  }
+
+
+
+
+
+  @Post('save-generated/:userId')
+  @ApiOperation({ summary: 'Загрузка сгенерированного изображения' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
+          return callback(new BadRequestException('Разрешены только изображения!'), false);
+        }
+        callback(null, true);
+      },
+    }),
+  )
+  async uploadGenerated(
+    @UploadedFile() file: Express.Multer.File,
+    @Param('userId') userId: string
+  ) {
+    if (!file) {
+      throw new BadRequestException('Файл не был загружен');
+    }
+    return await this.filesService.saveGeneratedImage(file, userId);
   }
 }

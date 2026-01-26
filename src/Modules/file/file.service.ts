@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
 import { Readable } from 'stream';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class FilesService {
@@ -88,4 +89,33 @@ export class FilesService {
       throw new Error(`Ошибка загрузки файла под индексом ${index}: ${error.message}`);
     }
   }
+
+async saveFileImage(file: Express.Multer.File, userId: string) {
+  const userFolder = `metra_files_for_generations/${userId}`;
+  const customFileName = `${userId}`;
+  const result = await this.uploadToCloudinary(file, userFolder, customFileName);
+  return {
+    originalName: file.originalname,
+    filename: result.public_id,
+    url: result.secure_url,
+  };
+}
+
+  async saveGeneratedImage(file: Express.Multer.File, userId: string) {
+    const userFolder = `metra_generations/${userId}`;
+
+    const uniqueId = uuidv4();
+    const customFileName = `$generated_${uniqueId}`;
+    try {
+      const result = await this.uploadToCloudinary(file, userFolder, customFileName);
+      return {
+        filename: result.public_id,
+        url: result.secure_url,
+        userId: userId
+      };
+    } catch (error) {
+      throw new Error(`Ошибка загрузки уникального фото: ${error.message}`);
+    }
+  }
+
 }
