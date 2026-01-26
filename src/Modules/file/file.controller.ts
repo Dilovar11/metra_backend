@@ -147,7 +147,7 @@ export class FilesController {
     schema: {
       type: 'object',
       properties: {
-        file: { // Переименовали в единственное число для логики
+        file: { 
           type: 'string',
           format: 'binary',
         },

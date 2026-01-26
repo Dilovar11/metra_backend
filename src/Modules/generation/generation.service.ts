@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Generation } from '../../Entities/generation.entity';
+import { Generation, GenerationType } from '../../Entities/generation.entity';
 import { User } from '../../Entities/user.entity';
 import { CreateGenerationDto } from './dto/create-generation.dto';
 
@@ -13,7 +13,7 @@ export class GenerationService {
 
     @InjectRepository(User)
     private userRepo: Repository<User>,
-  ) {}
+  ) { }
 
   async create(dto: CreateGenerationDto) {
     const user = await this.userRepo.findOne({ where: { id: dto.userId } });
@@ -37,10 +37,17 @@ export class GenerationService {
     });
   }
 
-  findByUser(userId: string) {
+  findByUserAndType(userId: string, type?: GenerationType) {
+    const whereOptions: any = { user: { id: userId } };
+
+    if (type) {
+      whereOptions.type = type;
+    }
+
     return this.generationRepo.find({
-      where: { user: { id: userId } },
+      where: whereOptions,
       relations: ['media'],
     });
-  }
+  } 
+
 }
