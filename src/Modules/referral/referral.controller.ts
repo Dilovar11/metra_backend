@@ -19,6 +19,7 @@ export class ReferralController {
   @Post('generate-link')
   // @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Принудительная генерация реферального кода' })
+  @ApiQuery({ name: 'userId', required: true, description: 'ID пользователя' })
   async generateLink(@Req() req: any, @Body('userId') userId: string) {
     const user = req.user || { id: userId };
     return await this.referralService.getMyLink(user);
@@ -26,7 +27,7 @@ export class ReferralController {
 
   @Get('click-link')
   @ApiOperation({ summary: 'Обработка перехода по реферальной ссылке' })
-  @ApiQuery({ name: 'code', required: true, example: 'REF123' }) 
+  @ApiQuery({ name: 'code', required: true, example: 'REF123' })
   async handleRefClick(@Query('code') code: string, @Res() res: any) {
     if (code) {
       await this.referralService.trackClick(code);
