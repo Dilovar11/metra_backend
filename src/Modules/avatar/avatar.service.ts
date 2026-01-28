@@ -25,6 +25,11 @@ export class AvatarService {
       throw new NotFoundException(`User with ID ${dto.userId} not found`);
     }
 
+    // 🔥 Удаляем старый аватар пользователя
+    await this.avatarRepository.delete({
+      user: { id: dto.userId },
+    });
+
     const avatar = this.avatarRepository.create({
       user,
       name: dto.name,
@@ -34,6 +39,7 @@ export class AvatarService {
 
     return this.avatarRepository.save(avatar);
   }
+
 
   findAll(): Promise<Avatar[]> {
     return this.avatarRepository.find({
