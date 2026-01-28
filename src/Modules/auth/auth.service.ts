@@ -1,9 +1,9 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from 'src/Entities/user.entity';
-import { Referral } from 'src/Entities/referral.entity';
-import { ReferralCode } from 'src/Entities/referral_codes';
+import { User } from '../../Entities/user.entity';
+import { Referral } from '../../Entities/referral.entity';
+import { ReferralCode } from '../../Entities/referral_codes';
 import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
@@ -35,7 +35,7 @@ export class AuthService {
     return savedUser;
   }
 
-  
+
   private async linkReferral(newUser: User, code: string) {
     // Ищем код и его владельца
     const refCodeRecord = await this.codeRepo.findOne({ 

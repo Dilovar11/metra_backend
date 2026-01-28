@@ -4,8 +4,8 @@ import { Repository } from 'typeorm';
 import { Referral } from '../../Entities/referral.entity';
 import { User } from '../../Entities/user.entity';
 import { CreateReferralDto } from './dto/create-referral.dto';
-import { ReferralCode } from 'src/Entities/referral_codes';
-import { PaymentTransaction } from 'src/Entities/payment-transaction';
+import { ReferralCode } from '../../Entities/referral_codes';
+import { PaymentTransaction } from '../../Entities/payment-transaction';
 
 @Injectable()
 export class ReferralService {

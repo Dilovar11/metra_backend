@@ -2,9 +2,9 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { User } from 'src/Entities/user.entity';
-import { Referral } from 'src/Entities/referral.entity';
-import { ReferralCode } from 'src/Entities/referral_codes';
+import { User } from '../../Entities/user.entity';
+import { Referral } from '../../Entities/referral.entity';
+import { ReferralCode } from '../../Entities/referral_codes';
 
 @Module({
   imports: [
