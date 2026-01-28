@@ -24,6 +24,7 @@ export class AuthService {
       telegramId: dto.telegramId,
       username: dto.username,
       firstName: dto.firstName,
+      lastName: dto.lastName
     });
     const savedUser = await this.userRepo.save(newUser);
 

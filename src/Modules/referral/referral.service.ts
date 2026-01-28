@@ -16,17 +16,25 @@ export class ReferralService {
     @InjectRepository(User) private userRepo: Repository<User>,
   ) { }
 
-  async getMyLink(user: User): Promise<string> {
-    let refCode = await this.codeRepo.findOne({ where: { owner: { id: user.id } } });
+  async getMyLink(userId: string): Promise<string> {
+    let refCode = await this.codeRepo.findOne({
+      where: { owner: { id: userId } }
+    });
 
     if (!refCode) {
+      const user = await this.userRepo.findOneBy({ id: userId });
+
+      if (!user) {
+        throw new NotFoundException(`Пользователь с ID ${userId} не найден`);
+      }
+      const generatedCode = user.telegramId || user.id.split('-')[0];
+
       refCode = this.codeRepo.create({
-        code: user.telegramId || user.id.split('-')[0], // Код на основе TG ID или части UUID
+        code: generatedCode,
         owner: user
       });
       await this.codeRepo.save(refCode);
     }
-
     return `https://t.me/YourBot?start=${refCode.code}`;
   }
 

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Query, Req, Res } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, Req, Res, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { ReferralService } from './referral.service';
 import { CreateReferralDto } from './dto/create-referral.dto';
@@ -19,10 +19,18 @@ export class ReferralController {
   @Post('generate-link')
   // @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Принудительная генерация реферального кода' })
-  @ApiQuery({ name: 'userId', required: true, description: 'ID пользователя' })
-  async generateLink(@Req() req: any, @Body('userId') userId: string) {
-    const user = req.user || { id: userId };
-    return await this.referralService.getMyLink(user);
+  @ApiQuery({ name: 'userId', required: true, description: 'UUID пользователя' })
+  async generateLink(
+    @Req() req: any,
+    @Query('userId') queryUserId: string,
+    @Body('userId') bodyUserId: string
+  ) {
+    const targetId = req.user?.id || queryUserId || bodyUserId;
+    if (!targetId) {
+      throw new BadRequestException('userId не предоставлен');
+    }
+    const link = await this.referralService.getMyLink(targetId);
+    return { link };
   }
 
   @Get('click-link')
