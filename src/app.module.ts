@@ -14,6 +14,7 @@ import { TokenTransactionModule } from './Modules/token-transaction/token-transa
 import { AvatarGeneratorModule } from './NanoBanana-API/avatar/generate-avatar.module';
 import { ImageGeneratorModule } from './NanoBanana-API/generation-image/image-generator.module';
 import { FilesModule } from './Modules/file/file.module';
+import { CorrectionImageModule } from './NanoBanana-API/correction-image/correction-image.module';
 
 @Module({
   imports: [
@@ -42,10 +43,11 @@ import { FilesModule } from './Modules/file/file.module';
     AvatarModule,
     ImageGeneratorModule,
     GenerationModule,
+    FilesModule,
+    CorrectionImageModule,
+    UsersModule,
     TokenBalanceModule,
     TokenTransactionModule,
-    FilesModule,
-    UsersModule,
     BodyPhotoModule,
     GenerationMediaModule,
     PurchaseModule,
