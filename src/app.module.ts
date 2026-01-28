@@ -15,6 +15,7 @@ import { AvatarGeneratorModule } from './NanoBanana-API/avatar/generate-avatar.m
 import { ImageGeneratorModule } from './NanoBanana-API/generation-image/image-generator.module';
 import { FilesModule } from './Modules/file/file.module';
 import { CorrectionImageModule } from './NanoBanana-API/correction-image/correction-image.module';
+import { AuthModule } from './Modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { CorrectionImageModule } from './NanoBanana-API/correction-image/correct
         connectionTimeoutMillis: 5000, 
       },
     }),
+    AuthModule,
     AvatarGeneratorModule,
     AvatarModule,
     ImageGeneratorModule,
@@ -46,12 +48,12 @@ import { CorrectionImageModule } from './NanoBanana-API/correction-image/correct
     FilesModule,
     CorrectionImageModule,
     UsersModule,
+    ReferralModule,
     TokenBalanceModule,
     TokenTransactionModule,
     BodyPhotoModule,
     GenerationMediaModule,
     PurchaseModule,
-    ReferralModule,
     SubscriptionModule,
     SupportTicketModule,
   ],

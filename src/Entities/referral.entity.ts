@@ -6,7 +6,7 @@ export class Referral {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   inviter: User;
 
   @ManyToOne(() => User)
