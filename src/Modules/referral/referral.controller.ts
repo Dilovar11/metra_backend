@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Body, Query, Req, Res } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { ReferralService } from './referral.service';
 import { CreateReferralDto } from './dto/create-referral.dto';
 
@@ -11,27 +11,26 @@ export class ReferralController {
   // @UseGuards(JwtAuthGuard)
   //@ApiBearerAuth()
   @ApiOperation({ summary: 'Получить данные для экрана партнерской программы' })
-  async getMyReferralInfo(@Req() req: any) {
-    // req.user.id получаем из JWT токена после авторизации
-    const userId = req.user.id;
+  @ApiQuery({ name: 'userId', required: true, description: 'ID пользователя' })
+  async getMyReferralInfo(@Query('userId') userId: string) {
     return await this.referralService.getReferralStats(userId);
   }
 
   @Post('generate-link')
   // @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Принудительная генерация реферального кода' })
-  async generateLink(@Req() req: any) {
-    return await this.referralService.getMyLink(req.user);
+  async generateLink(@Req() req: any, @Body('userId') userId: string) {
+    const user = req.user || { id: userId };
+    return await this.referralService.getMyLink(user);
   }
 
   @Get('click-link')
   @ApiOperation({ summary: 'Обработка перехода по реферальной ссылке' })
+  @ApiQuery({ name: 'code', required: true, example: 'REF123' }) 
   async handleRefClick(@Query('code') code: string, @Res() res: any) {
     if (code) {
-      // Увеличиваем счетчик переходов в БД
       await this.referralService.trackClick(code);
     }
-    // Перенаправляем пользователя на фронтенд регистрации с сохранением кода
     const frontendUrl = `https://metra-front-aht3.vercel.app/register?ref=${code}`;
     return res.redirect(frontendUrl);
   }
