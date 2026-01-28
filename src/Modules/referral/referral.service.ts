@@ -41,7 +41,7 @@ export class ReferralService {
     const codeInfo = await this.codeRepo.findOne({ where: { owner: { id: userId } } });
     const clicks = codeInfo ? codeInfo.clicks : 0;
 
-    // Количество покупок рефералов (уникальных транзакций от приглашенных)
+    // Количество покупок рефералов 
     const purchasesCount = await this.txRepo.count({
       where: { inviter: { id: userId } }
     });
