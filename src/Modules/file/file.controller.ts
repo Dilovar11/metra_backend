@@ -90,7 +90,7 @@ export class FilesController {
     if (!files || files.length === 0) {
       throw new BadRequestException('No files uploaded');
     }
-    return await this.filesService.saveFileAvatar(files, userId);
+    return await this.filesService.saveFileGeneratedAvatars(files, userId);
   }
 
 

@@ -25,7 +25,6 @@ export class AvatarService {
       throw new NotFoundException(`User with ID ${dto.userId} not found`);
     }
 
-    // 🔥 Удаляем старый аватар пользователя
     await this.avatarRepository.delete({
       user: { id: dto.userId },
     });
