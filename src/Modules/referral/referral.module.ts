@@ -1,13 +1,22 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Referral } from '../../Entities/referral.entity';
-import { User } from '../../Entities/user.entity';
 import { ReferralService } from './referral.service';
-import { ReferralController } from './referral.controller';
+
+import { ReferralCode } from '../../Entities/referral_codes';
+import { Referral } from '../../Entities/referral.entity';
+import { PaymentTransaction } from '../../Entities/payment-transaction';
+import { User } from '../../Entities/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Referral, User])],
+  imports: [
+    TypeOrmModule.forFeature([
+      ReferralCode,
+      Referral,
+      PaymentTransaction,
+      User,
+    ]),
+  ],
   providers: [ReferralService],
-  controllers: [ReferralController],
+  exports: [ReferralService],
 })
 export class ReferralModule {}
