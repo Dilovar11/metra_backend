@@ -6,6 +6,7 @@ import { ReferralCode } from '../../Entities/referral_codes';
 import { Referral } from '../../Entities/referral.entity';
 import { PaymentTransaction } from '../../Entities/payment-transaction';
 import { User } from '../../Entities/user.entity';
+import { ReferralController } from './referral.controller';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { User } from '../../Entities/user.entity';
       User,
     ]),
   ],
+  controllers: [ReferralController], 
   providers: [ReferralService],
   exports: [ReferralService],
 })
