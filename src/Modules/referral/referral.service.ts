@@ -7,6 +7,7 @@ import { CreateReferralDto } from './dto/create-referral.dto';
 import { ReferralCode } from '../../Entities/referral_codes';
 import { PaymentTransaction } from '../../Entities/payment-transaction';
 
+
 @Injectable()
 export class ReferralService {
   constructor(
