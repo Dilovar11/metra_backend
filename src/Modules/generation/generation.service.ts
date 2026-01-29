@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { Generation, GenerationType } from '../../Entities/generation.entity';
 import { User } from '../../Entities/user.entity';
 import { CreateGenerationDto } from './dto/create-generation.dto';
@@ -30,11 +30,37 @@ export class GenerationService {
     return this.generationRepo.save(generation);
   }
 
-  findAll() {
-    return this.generationRepo.find({
+  async findAll(filter: 'all' | 'photo' | 'video' = 'all') {
+
+    const CategoryNames: Record<GenerationType, string> = {
+      [GenerationType.PHOTO_BY_STAGE]: 'Фото по сцене',
+      [GenerationType.PHOTO_BY_REFERENCE]: 'Фото по референсу (Image to Image)',
+      [GenerationType.PHOTO_ANIMATION]: 'Оживление фото',
+      [GenerationType.LIP_SYNC]: 'LipSync',
+      [GenerationType.WOMEN_STYLE]: 'Женский стиль',
+      [GenerationType.MEN_STYLE]: 'Мужской стиль',
+      [GenerationType.NANO_BANANA]: 'Nano Banana',
+      [GenerationType.NANO_BANANA_PRO]: 'Nano Banana PRO',
+    };
+    const videoTypes = [GenerationType.PHOTO_ANIMATION, GenerationType.LIP_SYNC];
+
+    const findOptions: any = {
       relations: ['user', 'media'],
       order: { createdAt: 'DESC' },
-    });
+      where: {},
+    };
+
+    if (filter === 'video') {
+      findOptions.where.type = In(videoTypes);
+    } else if (filter === 'photo') {
+      findOptions.where.type = Not(In(videoTypes));
+    }
+    const generations = await this.generationRepo.find(findOptions);
+
+    return generations.map(gen => ({
+      ...gen,
+      category: CategoryNames[gen.type] || 'Неизвестная категория'
+    }));
   }
 
   findByUserAndType(userId: string, type?: GenerationType) {
@@ -48,6 +74,6 @@ export class GenerationService {
       where: whereOptions,
       relations: ['media'],
     });
-  } 
+  }
 
 }
