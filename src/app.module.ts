@@ -16,6 +16,8 @@ import { ImageGeneratorModule } from './NanoBanana-API/generation-image/image-ge
 import { FilesModule } from './Modules/file/file.module';
 import { CorrectionImageModule } from './NanoBanana-API/correction-image/correction-image.module';
 import { AuthModule } from './Modules/auth/auth.module';
+import { Scene } from './Entities/scene.entity';
+import { SceneModule } from './Modules/scene/scene.module';
 
 @Module({
   imports: [
@@ -45,6 +47,7 @@ import { AuthModule } from './Modules/auth/auth.module';
     AvatarModule,
     ImageGeneratorModule,
     GenerationModule,
+    SceneModule,
     FilesModule,
     CorrectionImageModule,
     UsersModule,
