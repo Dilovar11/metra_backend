@@ -5,6 +5,7 @@ export class CreateSceneDto {
     // Именно эта строка создает выпадающий список
     @ApiProperty({
         enum: SceneType,
+        enumName: 'SceneType',
         description: 'Выберите тип сцены из списка',
         example: SceneType.HOME_PORTRAIT // подсказка для Swagger
     })
