@@ -42,20 +42,27 @@ export class ReferralService {
   }
 
   async trackClick(code: string, telegramId: string) {
-    // 1. Ищем сам код в базе
-    const refCodeRecord = await this.codeRepo.findOne({ where: { code, isActive: true } });
+    // 1. Ищем код и ОБЯЗАТЕЛЬНО подгружаем владельца (owner)
+    const refCodeRecord = await this.codeRepo.findOne({
+      where: { code, isActive: true },
+      relations: ['owner'] // <--- Добавьте это свойство
+    });
 
     if (!refCodeRecord) {
       return { success: false, message: 'Код не найден или не активен' };
     }
-    if (refCodeRecord.owner.telegramId === telegramId) {
+
+    // Теперь owner будет существовать, и ошибка уйдет
+    if (refCodeRecord.owner && refCodeRecord.owner.telegramId === telegramId) {
       return { success: false, message: 'Нельзя кликать по своей ссылке' };
     }
+
     try {
       await this.clickRepo.insert({
         telegramId: telegramId,
-        referralCode: refCodeRecord, // TypeORM сам подставит ID
+        referralCode: refCodeRecord,
       });
+
       await this.codeRepo.increment({ id: refCodeRecord.id }, 'clicks', 1);
 
       return { success: true };
