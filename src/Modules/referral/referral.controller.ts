@@ -32,35 +32,24 @@ export class ReferralController {
     const link = await this.referralService.getMyLink(targetId);
     return { link };
   }
-
-  @Get('click-link')
+  @Post('click-link/:code') // Меняем на Post и добавляем параметр в путь
   @ApiOperation({
     summary: 'Засчитать переход по реферальной ссылке',
     description: 'Проверяет уникальность клика'
   })
-  @ApiParam({
-    name: 'code',
-    description: 'Уникальный реферальный код',
-    example: 'REF777'
-  })
+  @ApiParam({ name: 'code', example: 'REF777' })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        telegramId: {
-          type: 'string',
-          description: 'telegram-ID пользователя, который кликнул по ссылке',
-          example: '123456789'
-        }
+        telegramId: { type: 'string', example: '123456789' }
       },
       required: ['telegramId']
     }
   })
-  @ApiResponse({ status: 200, description: 'Обработано (клик либо засчитан, либо проигнорирован).' })
-  @ApiResponse({ status: 404, description: 'Реферальный код не найден.' })
   async trackClick(
     @Param('code') code: string,
-    @Body('telegramId') telegramId: string,
+    @Body('telegramId') telegramId: string, // Здесь оставляем Body
   ) {
     return await this.referralService.trackClick(code, telegramId);
   }
