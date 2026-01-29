@@ -6,12 +6,14 @@ import { User } from '../../Entities/user.entity';
 import { CreateReferralDto } from './dto/create-referral.dto';
 import { ReferralCode } from '../../Entities/referral_codes';
 import { PaymentTransaction } from '../../Entities/payment-transaction';
+import { ReferralClick } from '../../Entities/referral_click.entity';
 
 
 @Injectable()
 export class ReferralService {
   constructor(
     @InjectRepository(ReferralCode) private codeRepo: Repository<ReferralCode>,
+    @InjectRepository(ReferralClick) private clickRepo: Repository<ReferralClick>,
     @InjectRepository(Referral) private referralRepo: Repository<Referral>,
     @InjectRepository(PaymentTransaction) private txRepo: Repository<PaymentTransaction>,
     @InjectRepository(User) private userRepo: Repository<User>,
@@ -36,12 +38,30 @@ export class ReferralService {
       });
       await this.codeRepo.save(refCode);
     }
-    return `https://t.me/YourBot?start=${refCode.code}`;
+    return `https://t.me/M_etraBot?start=${refCode.code}`;
   }
 
-  // 2. Учет перехода (клик по ссылке)
-  async trackClick(code: string) {
-    await this.codeRepo.increment({ code }, 'clicks', 1);
+  async trackClick(code: string, telegramId: string) {
+    // 1. Ищем сам код в базе
+    const refCodeRecord = await this.codeRepo.findOne({ where: { code, isActive: true } });
+
+    if (!refCodeRecord) {
+      return { success: false, message: 'Код не найден или не активен' };
+    }
+    if (refCodeRecord.owner.telegramId === telegramId) {
+      return { success: false, message: 'Нельзя кликать по своей ссылке' };
+    }
+    try {
+      await this.clickRepo.insert({
+        telegramId: telegramId,
+        referralCode: refCodeRecord, // TypeORM сам подставит ID
+      });
+      await this.codeRepo.increment({ id: refCodeRecord.id }, 'clicks', 1);
+
+      return { success: true };
+    } catch (e) {
+      return { success: false, message: 'Клик уже был засчитан ранее' };
+    }
   }
 
   // 3. Получение статистики для экрана "Партнёрская программа"
@@ -63,7 +83,7 @@ export class ReferralService {
     const totalIncome = transactions.reduce((sum, tx) => sum + Number(tx.referralBonus), 0);
 
     return {
-      referralLink: codeInfo ? `https://t.me/YourBot?start=${codeInfo.code}` : 'undefined',
+      referralLink: codeInfo ? `https://t.me/M_etraBot?start=${codeInfo.code}` : 'undefined',
       stats: {
         clicks: clicks,
         purchases: purchasesCount,

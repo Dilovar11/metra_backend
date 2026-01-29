@@ -1,5 +1,5 @@
-import { Controller, Post, Get, Body, Query, Req, Res, BadRequestException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { Controller, Post, Get, Body, Query, Req, Res, BadRequestException, Param } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBody } from '@nestjs/swagger';
 import { ReferralService } from './referral.service';
 import { CreateReferralDto } from './dto/create-referral.dto';
 
@@ -34,15 +34,37 @@ export class ReferralController {
   }
 
   @Get('click-link')
-  @ApiOperation({ summary: 'Обработка перехода по реферальной ссылке' })
-  @ApiQuery({ name: 'code', required: true, example: 'REF123' })
-  async handleRefClick(@Query('code') code: string, @Res() res: any) {
-    if (code) {
-      await this.referralService.trackClick(code);
+  @ApiOperation({
+    summary: 'Засчитать переход по реферальной ссылке',
+    description: 'Проверяет уникальность клика'
+  })
+  @ApiParam({
+    name: 'code',
+    description: 'Уникальный реферальный код',
+    example: 'REF777'
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        telegramId: {
+          type: 'string',
+          description: 'telegram-ID пользователя, который кликнул по ссылке',
+          example: '123456789'
+        }
+      },
+      required: ['telegramId']
     }
-    const frontendUrl = `https://metra-front-aht3.vercel.app/register?ref=${code}`;
-    return res.redirect(frontendUrl);
+  })
+  @ApiResponse({ status: 200, description: 'Обработано (клик либо засчитан, либо проигнорирован).' })
+  @ApiResponse({ status: 404, description: 'Реферальный код не найден.' })
+  async trackClick(
+    @Param('code') code: string,
+    @Body('telegramId') telegramId: string,
+  ) {
+    return await this.referralService.trackClick(code, telegramId);
   }
+
 
   @Post()
   @ApiOperation({ summary: 'Создать реферал' })
