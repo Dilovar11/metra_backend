@@ -17,13 +17,13 @@ export class GenerationController {
   }
 
   @Get('by-user')
-  @ApiOperation({ summary: 'Все генерации текущего пользователя по фильтру' })
+  @ApiOperation({ summary: 'Генерации пользователя по ID' })
+  @ApiQuery({ name: 'userId', required: true, type: Number, description: 'Введите ID пользователя' }) 
   @ApiQuery({ name: 'filter', required: false, enum: ['all', 'photo', 'video'] })
   findAll(
-    @Req() req: any,
+    @Query('userId') userId: number, 
     @Query('filter') filter: 'all' | 'photo' | 'video' = 'all'
   ) {
-    const userId = req.user.id;
     return this.service.findAll(userId, filter);
   }
 
@@ -33,7 +33,6 @@ export class GenerationController {
     @Query('userId') userId: string,
     @Query('type') type?: GenerationType
   ) {
-    // Передаем оба параметра в сервис
     return this.service.findByUserAndType(userId, type);
   }
 }
