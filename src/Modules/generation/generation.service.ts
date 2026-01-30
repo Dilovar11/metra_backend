@@ -30,7 +30,7 @@ export class GenerationService {
     return this.generationRepo.save(generation);
   }
 
-  async findAll(userId: number, filter: 'all' | 'photo' | 'video' = 'all') {
+  async findAll(userId: string, filter: 'all' | 'photo' | 'video' = 'all') {
     const CategoryNames: Record<GenerationType, string> = {
       [GenerationType.PHOTO_BY_STAGE]: 'Фото по сцене',
       [GenerationType.PHOTO_BY_REFERENCE]: 'Фото по референсу (Image to Image)',

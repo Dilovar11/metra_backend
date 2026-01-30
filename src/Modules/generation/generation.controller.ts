@@ -18,10 +18,10 @@ export class GenerationController {
 
   @Get('by-user')
   @ApiOperation({ summary: 'Генерации пользователя по ID' })
-  @ApiQuery({ name: 'userId', required: true, type: Number, description: 'Введите ID пользователя' }) 
+  @ApiQuery({ name: 'userId', required: true, description: 'Введите ID пользователя' }) 
   @ApiQuery({ name: 'filter', required: false, enum: ['all', 'photo', 'video'] })
   findAll(
-    @Query('userId') userId: number, 
+    @Query('userId') userId: string, 
     @Query('filter') filter: 'all' | 'photo' | 'video' = 'all'
   ) {
     return this.service.findAll(userId, filter);
