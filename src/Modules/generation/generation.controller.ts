@@ -16,8 +16,8 @@ export class GenerationController {
     return this.service.create(dto);
   }
 
-  @Get()
-  @ApiOperation({ summary: 'Все генерации текущего пользователя' })
+  @Get('by-user')
+  @ApiOperation({ summary: 'Все генерации текущего пользователя по фильтру' })
   @ApiQuery({ name: 'filter', required: false, enum: ['all', 'photo', 'video'] })
   findAll(
     @Req() req: any,
@@ -27,8 +27,8 @@ export class GenerationController {
     return this.service.findAll(userId, filter);
   }
 
-  @Get('by-user')
-  @ApiOperation({ summary: 'Генерации пользователя' })
+  @Get('by-category')
+  @ApiOperation({ summary: 'Генерации пользователя по категории' })
   findByUser(
     @Query('userId') userId: string,
     @Query('type') type?: GenerationType
