@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Param, Body, Query } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Param, Body, Query, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { GenerationService } from './generation.service';
 import { CreateGenerationDto } from './dto/create-generation.dto';
@@ -17,16 +17,14 @@ export class GenerationController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Все генерации по фильтру' })
-  @ApiQuery({
-    name: 'filter',
-    required: false,
-    enum: ['all', 'photo', 'video'],
-    description: 'Фильтрация контента: all, photo, video',
-    example: 'all'
-  })
-  findAll(@Query('filter') filter: 'all' | 'photo' | 'video' = 'all') {
-    return this.service.findAll(filter);
+  @ApiOperation({ summary: 'Все генерации текущего пользователя' })
+  @ApiQuery({ name: 'filter', required: false, enum: ['all', 'photo', 'video'] })
+  findAll(
+    @Req() req: any,
+    @Query('filter') filter: 'all' | 'photo' | 'video' = 'all'
+  ) {
+    const userId = req.user.id;
+    return this.service.findAll(userId, filter);
   }
 
   @Get('by-user')

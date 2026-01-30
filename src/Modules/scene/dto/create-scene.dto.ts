@@ -7,7 +7,7 @@ export class CreateSceneDto {
         enum: SceneType,
         enumName: 'SceneType',
         description: 'Выберите тип сцены из списка',
-        example: SceneType.HOME_PORTRAIT // подсказка для Swagger
+        example: SceneType.HOME_PORTRAIT 
     })
     type: SceneType;
 

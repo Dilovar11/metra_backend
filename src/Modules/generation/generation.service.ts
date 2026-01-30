@@ -30,8 +30,7 @@ export class GenerationService {
     return this.generationRepo.save(generation);
   }
 
-  async findAll(filter: 'all' | 'photo' | 'video' = 'all') {
-
+  async findAll(userId: number, filter: 'all' | 'photo' | 'video' = 'all') {
     const CategoryNames: Record<GenerationType, string> = {
       [GenerationType.PHOTO_BY_STAGE]: 'Фото по сцене',
       [GenerationType.PHOTO_BY_REFERENCE]: 'Фото по референсу (Image to Image)',
@@ -42,12 +41,15 @@ export class GenerationService {
       [GenerationType.NANO_BANANA]: 'Nano Banana',
       [GenerationType.NANO_BANANA_PRO]: 'Nano Banana PRO',
     };
+
     const videoTypes = [GenerationType.PHOTO_ANIMATION, GenerationType.LIP_SYNC];
 
     const findOptions: any = {
       relations: ['user', 'media'],
       order: { createdAt: 'DESC' },
-      where: {},
+      where: {
+        user: { id: userId }
+      },
     };
 
     if (filter === 'video') {
@@ -55,6 +57,7 @@ export class GenerationService {
     } else if (filter === 'photo') {
       findOptions.where.type = Not(In(videoTypes));
     }
+
     const generations = await this.generationRepo.find(findOptions);
 
     return generations.map(gen => ({
