@@ -5,6 +5,7 @@ import { TokenBalanceService } from './token-balance.service';
 import { TokenBalance } from '../../Entities/token-balance.entity';
 import { User } from '../../Entities/user.entity';
 import { ReferralBalance } from '../../Entities/referral-balance.entity'; // <-- Проверьте этот путь!
+import { TokenBalanceController } from './token-balance.controller';
 
 @Module({
   imports: [
@@ -16,5 +17,6 @@ import { ReferralBalance } from '../../Entities/referral-balance.entity'; // <--
   ],
   providers: [TokenBalanceService],
   exports: [TokenBalanceService],
+  controllers: [TokenBalanceController]
 })
 export class TokenBalanceModule {}
