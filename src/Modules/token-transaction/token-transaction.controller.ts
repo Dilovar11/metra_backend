@@ -27,7 +27,6 @@ export class TokenTransactionController {
   }
 
   /**
-   * 2. Callback от банка (Webhook)
    * На этот адрес банк пришлет данные после оплаты
    */
   @Post('callback')
