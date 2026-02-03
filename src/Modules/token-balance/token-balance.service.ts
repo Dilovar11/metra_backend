@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { TokenBalance } from '../../Entities/token-balance.entity';
 import { User } from '../../Entities/user.entity';
 import { CreateTokenBalanceDto } from './dto/create-token-balance.dto';
-import { ReferralBalance } from 'src/Entities/referral-balance.entity';
+import { ReferralBalance } from '../../Entities/referral-balance.entity';
 
 @Injectable()
 export class TokenBalanceService {

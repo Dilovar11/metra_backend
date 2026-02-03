@@ -9,7 +9,7 @@ import { TokenTransaction } from '../../Entities/token-transaction.entity';
 import { TokenBalance } from '../../Entities/token-balance.entity';
 import { User } from '../../Entities/user.entity';
 import { CreateTokenTransactionDto } from './dto/create-token-transaction.dto';
-import { PaymentTransaction } from 'src/Entities/payment-transaction';
+import { PaymentTransaction } from '../../Entities/payment-transaction';
 import { TokenBalanceService } from '../token-balance/token-balance.service';
 
 @Injectable()
