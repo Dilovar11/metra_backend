@@ -65,14 +65,6 @@ export class TokenTransactionController {
     });
   }
 
-
-  @Post()
-  @ApiOperation({ summary: 'Создать токен-транзакцию (меняет баланс)' })
-  @ApiResponse({ status: 201 })
-  create(@Body() dto: CreateTokenTransactionDto) {
-    return this.service.create(dto);
-  }
-
   @Get()
   @ApiOperation({ summary: 'Все транзакции (admin)' })
   findAll() {

@@ -45,6 +45,7 @@ export class TokenTransactionService {
       status: 'PENDING'
     });
     await this.transactionRepo.save(transaction);
+    
 
     // Локальный URL для эмуляции (измените порт, если у вас не 3000)
     const fakeBankUrl = 'http://localhost:3000/payments/fake-bank-page';
@@ -98,47 +99,16 @@ export class TokenTransactionService {
     }
   }
 
-  async create(dto: CreateTokenTransactionDto) {
-    return this.dataSource.transaction(async (manager) => {
-      const user = await manager.findOne(User, {
-        where: { id: dto.userId },
-      });
-      if (!user) throw new NotFoundException('User not found');
-
-      const balance = await manager.findOne(TokenBalance, {
-        where: { user: { id: user.id } },
-        lock: { mode: 'pessimistic_write' },
-      });
-
-      if (!balance) throw new NotFoundException('Token balance not found');
-
-      const newBalance = balance.balance + dto.amount;
-      if (newBalance < 0) {
-        throw new BadRequestException('Insufficient tokens');
-      }
-
-      balance.balance = newBalance;
-      await manager.save(balance);
-
-      const tx = manager.create(TokenTransaction, {
-        user,
-        amount: dto.amount,
-        reason: dto.reason,
-      });
-
-      return manager.save(tx);
-    });
-  }
 
   findAll() {
-    return this.txRepo.find({
+    return this.transactionRepo.find({
       relations: ['user'],
       order: { createdAt: 'DESC' },
     });
   }
 
   findByUser(userId: string) {
-    return this.txRepo.find({
+    return this.transactionRepo.find({
       where: { user: { id: userId } },
       order: { createdAt: 'DESC' },
     });
