@@ -15,8 +15,8 @@ export class TokenBalanceService {
     @InjectRepository(User)
     private userRepo: Repository<User>,
 
-    @InjectRepository(ReferralBalance)
-    private refRepo: Repository<ReferralBalance>
+    @InjectRepository(ReferralBalance) // Индекс [2]
+    private refRepo: Repository<ReferralBalance>,
   ) { }
 
   async addTokens(userId: string, tokens: number) {
