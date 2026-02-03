@@ -14,15 +14,17 @@ export class TokenTransactionController {
     schema: {
       type: 'object',
       properties: {
+        userId: { type: 'string', example: 'uuid-пользователя', description: 'ID пользователя из базы' },
         tokensAmount: { type: 'number', example: 100 }
-      }
+      },
+      required: ['userId', 'tokensAmount']
     }
   })
   async createOrder(
-    @Req() req: any,
+    @Body('userId') userId: string, // Теперь берем из тела запроса, а не из req.user
     @Body('tokensAmount') tokensAmount: number
   ) {
-    const userId = req.user.id;
+    // Вызываем сервис с переданным userId
     return await this.service.createAcquiringOrder(userId, tokensAmount);
   }
 
