@@ -10,7 +10,7 @@ import { TokenBalanceModule } from '../token-balance/token-balance.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TokenTransaction, TokenBalance, User, PaymentTransaction]),
+    TypeOrmModule.forFeature([TokenTransaction, User, PaymentTransaction]),
     TokenBalanceModule
   ],
   providers: [TokenTransactionService],

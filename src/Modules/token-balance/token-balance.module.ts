@@ -7,7 +7,7 @@ import { TokenBalanceController } from './token-balance.controller';
 import { ReferralBalance } from '../../Entities/referral-balance.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([TokenBalance, User, ReferralBalance])],
+  imports: [TypeOrmModule.forFeature([TokenBalance, User])],
   providers: [TokenBalanceService],
   controllers: [TokenBalanceController],
 })
