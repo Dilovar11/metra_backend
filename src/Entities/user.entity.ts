@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity('users')
@@ -26,6 +26,15 @@ export class User {
   @ApiProperty({ example: false })
   @Column({ default: false })
   isBlocked: boolean;
+
+  // Тот, кто пригласил этого пользователя
+  @ManyToOne(() => User, (user) => user.referrals, { nullable: true })
+  @JoinColumn({ name: 'inviterId' })
+  inviter: User;
+
+  // Список людей, которых пригласил этот пользователь
+  @OneToMany(() => User, (user) => user.inviter)
+  referrals: User[];
 
   @ApiProperty({ example: '2026-01-05T00:00:00.000Z' })
   @CreateDateColumn()

@@ -13,16 +13,22 @@ export class PaymentTransaction {
   id: string;
 
   @Column('decimal', { precision: 10, scale: 2 })
-  amount: number; // Сумма пополнения
+  amount: number;
 
   @Column('decimal', { precision: 10, scale: 2 })
   referralBonus: number; // Те самые 25% (amount * 0.25)
 
-  @ManyToOne(() => User)
-  user: User; // Кто совершил покупку (реферал)
+  @Column({ default: 'PENDING' })
+  status: string; 
+
+  @Column({ nullable: true })
+  externalId: string;
 
   @ManyToOne(() => User)
-  inviter: User; // Кому начислен бонус
+  user: User; 
+
+  @ManyToOne(() => User)
+  inviter: User; 
 
   @CreateDateColumn()
   createdAt: Date;

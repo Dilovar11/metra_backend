@@ -1,12 +1,69 @@
-import { Controller, Post, Get, Body, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Post, Get, Body, Query, HttpCode, Req, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { TokenTransactionService } from './token-transaction.service';
 import { CreateTokenTransactionDto } from './dto/create-token-transaction.dto';
 
 @ApiTags('TokenTransactions')
 @Controller('token-transactions')
 export class TokenTransactionController {
-  constructor(private readonly service: TokenTransactionService) {}
+  constructor(private readonly service: TokenTransactionService) { }
+
+  @Post('create')
+  @ApiOperation({ summary: 'Создать заказ на пополнение токенов' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        tokensAmount: { type: 'number', example: 100 }
+      }
+    }
+  })
+  async createOrder(
+    @Req() req: any,
+    @Body('tokensAmount') tokensAmount: number
+  ) {
+    const userId = req.user.id;
+    return await this.service.createAcquiringOrder(userId, tokensAmount);
+  }
+
+  /**
+   * 2. Callback от банка (Webhook)
+   * На этот адрес банк пришлет данные после оплаты
+   */
+  @Post('callback')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Прием уведомления от банка' })
+  async handleBankCallback(@Body() data: any) {
+    // В некоторых случаях банк присылает данные не в Body, а в Query
+    // Если body пустой, можно попробовать прочитать из Query
+    console.log('Bank Callback Data:', data);
+
+    await this.service.handleCallback(data);
+
+    // Банку нужно ответить "OK" или другим кодом, чтобы он не слал уведомление повторно
+    return 'OK';
+  }
+
+
+  // 2. Эмуляция платежной страницы банка
+  @Post('fake-bank-page')
+  async fakeBank(@Body() body: any) {
+    const { order_id, amount } = body;
+
+    console.log(`[FakeBank] Пользователь "оплачивает" заказ ${order_id}...`);
+
+    // Имитируем задержку банка 1 секунду
+    await new Promise(res => setTimeout(res, 1000));
+
+    // Сами вызываем свой же callback, как это сделал бы реальный банк
+    return this.service.handleCallback({
+      order_id: order_id,
+      status: 'SUCCESS',
+      bank_id: 'FAKE_DC_TRANS_' + Math.random().toString(36).toUpperCase().slice(2, 10),
+      amount: amount
+    });
+  }
+
 
   @Post()
   @ApiOperation({ summary: 'Создать токен-транзакцию (меняет баланс)' })
