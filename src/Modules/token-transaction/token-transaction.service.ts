@@ -11,7 +11,7 @@ import { User } from '../../Entities/user.entity';
 import { CreateTokenTransactionDto } from './dto/create-token-transaction.dto';
 import { PaymentTransaction } from '../../Entities/payment-transaction';
 import { TokenBalanceService } from '../token-balance/token-balance.service';
-import { YooCheckout } from 'yookassa';
+import * as YooKassa from 'yookassa';
 import { v4 as uuidv4 } from 'uuid'; // для ключа идемпотентности
 
 interface ICreatePayment {
@@ -33,7 +33,7 @@ interface ICreatePayment {
 @Injectable()
 export class TokenTransactionService {
 
-  private checkout: YooCheckout;
+  private checkout: any;
 
   constructor(
     private dataSource: DataSource,
@@ -49,7 +49,7 @@ export class TokenTransactionService {
     @InjectRepository(User)
     private userRepo: Repository<User>,
   ) {
-    this.checkout = new YooCheckout({
+    this.checkout = new YooKassa.YooCheckout({
       shopId: '513616',
       secretKey: 'test_*gZP0cwPbDpFAo6GSI4Ug31ZHaqO79Yicct7WuDgOonqc',
     });
