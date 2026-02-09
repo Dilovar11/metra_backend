@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Scene, SceneType } from '../../Entities/scene.entity';
+import { Scene, SceneMode, SceneType } from '../../Entities/scene.entity';
 import { CreateSceneDto } from './dto/create-scene.dto';
 
 @Injectable()
@@ -11,11 +11,13 @@ export class SceneService {
         private readonly sceneRepo: Repository<Scene>,
     ) { }
 
-    async findAll(type?: SceneType): Promise<Scene[]> {
-        return await this.sceneRepo.find({
-            where: type ? { type } : {}, // Фильтрация, если type указан
-            order: { createdAt: 'DESC' },
-        });
+    async findAll(mode?: SceneMode, type?: SceneType) {
+        const where: any = {};
+
+        if (mode) where.mode = mode;
+        if (type) where.type = type;
+
+        return this.sceneRepo.find({ where });
     }
 
     async create(dto: CreateSceneDto): Promise<Scene> {

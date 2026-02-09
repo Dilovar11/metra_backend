@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
+// Существующие типы контента
 export enum SceneType {
     HOME_PORTRAIT = 'Домашний портрет',
     STUDIO_LOOK = 'Студийный образ',
@@ -9,10 +10,23 @@ export enum SceneType {
     COUPLE_DUO = 'Пара / Duo',
 }
 
+// Новый тип для определения режима создания
+export enum SceneMode {
+    TEMPLATE = 'Template',
+    FREE_STYLE = 'FreeStyle',
+}
+
 @Entity('scenes')
 export class Scene {
     @PrimaryGeneratedColumn()
     id: number;
+
+    @Column({
+        type: 'enum',
+        enum: SceneMode,
+        default: SceneMode.TEMPLATE 
+    })
+    mode: SceneMode;
 
     @Column({
         type: 'enum',
