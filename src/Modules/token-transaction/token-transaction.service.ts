@@ -88,9 +88,10 @@ export class TokenTransactionService {
     await this.transactionRepo.save(transaction);
 
 
+    // Подготовка данных
     const createPayload: ICreatePayment = {
       amount: {
-        value: amount.toFixed(2), // ЮKassa требует формат "100.00"
+        value: amount.toFixed(2),
         currency: 'RUB',
       },
       payment_method_data: {
@@ -98,11 +99,13 @@ export class TokenTransactionService {
       },
       confirmation: {
         type: 'redirect',
-        return_url: 'https://ваш-сайт.ru/profile',
+        // ВАЖНО: Используйте корректный URL. 
+        // Если тестируете локально, лучше временно поставить google.com
+        return_url: 'https://www.google.com',
       },
       description: `Пополнение баланса: ${tokensAmount} токенов`,
       metadata: {
-        order_id: transaction.id, // ID из нашей базы для обработки вебхука
+        order_id: transaction.id,
         userId: user.id
       }
     };
@@ -110,21 +113,29 @@ export class TokenTransactionService {
     const idempotencyKey = uuidv4();
 
     try {
-      // 5. Запрос к API ЮKassa
       const payment = await this.checkout.createPayment(createPayload, idempotencyKey);
 
-      // 6. Сохраняем ID платежа от ЮKassa (например: 2b34...-000f)
       transaction.externalId = payment.id;
       await this.transactionRepo.save(transaction);
 
-      // 7. Возвращаем ссылку на страницу оплаты
       return {
         url: payment.confirmation.confirmation_url,
         paymentId: payment.id
       };
     } catch (error) {
-      console.error('Ошибка ЮKassa:', error);
-      throw new BadRequestException('Не удалось инициировать платеж');
+      // ВАЖНО: Выводим подробности ошибки в консоль сервера
+      console.error('--- ЮKASSA API ERROR DETAILS ---');
+      if (error.response) {
+        console.error('Status:', error.response.status);
+        console.error('Body:', JSON.stringify(error.response.data, null, 2));
+      } else {
+        console.error('Error Message:', error.message);
+      }
+      console.error('---------------------------------');
+
+      throw new BadRequestException(
+        error.response?.data?.description || 'Не удалось инициировать платеж'
+      );
     }
   }
 
