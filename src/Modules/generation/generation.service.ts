@@ -79,4 +79,19 @@ export class GenerationService {
     });
   }
 
+  getPromptByGenerationType(type: GenerationType): string {
+    const Prompts: Record<GenerationType, string> = {
+      [GenerationType.PHOTO_BY_STAGE]: "Профессиональная съемка на сцене, высокое разрешение, драматичное освещение, 8k",
+      [GenerationType.PHOTO_BY_REFERENCE]: "Стилизация под референсное изображение, сохранение композиции и цветовой палитры, высокая детализация",
+      [GenerationType.PHOTO_ANIMATION]: "Плавная анимация, естественные движения персонажа, высокое качество кадров",
+      [GenerationType.LIP_SYNC]: "Точная синхронизация губ, естественная мимика, фокус на лице",
+      [GenerationType.WOMEN_STYLE]: "Элегантный женский портрет, эстетика модной фотографии, мягкий свет, детализированные черты лица",
+      [GenerationType.MEN_STYLE]: "Четкий мужской портрет, мужественный стиль, кинематографичные тени, высокий контраст",
+      [GenerationType.NANO_BANANA]: "Креативный художественный рендер, яркие цвета, уникальная текстура в стиле Nano",
+      [GenerationType.NANO_BANANA_PRO]: "Ультра-реалистичный профессиональный рендер, трассировка лучей, шедевральное качество, движок Nano Banana PRO",
+    };
+
+    return Prompts[type] || "Высококачественный промпт по умолчанию";
+  }
+
 }

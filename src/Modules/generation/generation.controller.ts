@@ -35,4 +35,12 @@ export class GenerationController {
   ) {
     return this.service.findByUserAndType(userId, type);
   }
+
+  @Get('prompt')
+  @ApiOperation({ summary: 'Получить промпт для типа генерации' })
+  @ApiQuery({ name: 'type', enum: GenerationType, required: true, description: 'Тип генерации' })
+  getPrompt(@Query('type') type: GenerationType) {
+    const prompt = this.service.getPromptByGenerationType(type);
+    return { type, prompt };
+  }
 }
