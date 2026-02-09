@@ -42,7 +42,8 @@
     "rxjs": "^7.8.1",
     "serverless-http": "^4.0.0",
     "swagger-ui-express": "^4.6.3",
-    "typeorm": "^0.3.28"
+    "typeorm": "^0.3.28",
+    "yookassa": "^0.1.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
