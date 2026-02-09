@@ -11,7 +11,7 @@ import { User } from '../../Entities/user.entity';
 import { CreateTokenTransactionDto } from './dto/create-token-transaction.dto';
 import { PaymentTransaction } from '../../Entities/payment-transaction';
 import { TokenBalanceService } from '../token-balance/token-balance.service';
-import * as YooKassa from 'yookassa';
+const YooKassa = require('yookassa');
 import { v4 as uuidv4 } from 'uuid'; // для ключа идемпотентности
 
 interface ICreatePayment {
