@@ -49,10 +49,20 @@ export class TokenTransactionService {
     @InjectRepository(User)
     private userRepo: Repository<User>,
   ) {
-    this.checkout = new YooKassa.YooCheckout({
-      shopId: '513616',
-      secretKey: 'test_*gZP0cwPbDpFAo6GSI4Ug31ZHaqO79Yicct7WuDgOonqc',
-    });
+    try {
+      // Пытаемся инициализировать через разные варианты экспорта
+      const CheckoutClass = YooKassa.YooCheckout || (YooKassa.default && YooKassa.default.YooCheckout);
+
+      if (!CheckoutClass) {
+        throw new Error('Could not find YooCheckout constructor in yookassa module');
+      }
+      this.checkout = new YooKassa.YooCheckout({
+        shopId: '513616',
+        secretKey: 'test_*gZP0cwPbDpFAo6GSI4Ug31ZHaqO79Yicct7WuDgOonqc',
+      });
+    } catch (e) {
+      console.error('Yookassa Init Error:', e.message);
+    }
   }
 
 
@@ -152,7 +162,7 @@ export class TokenTransactionService {
 
   async findAll() {
     return await this.transactionRepo.find({
-      relations: ['user', 'inviter'], 
+      relations: ['user', 'inviter'],
       order: {
         createdAt: 'DESC',
       },
@@ -168,7 +178,7 @@ export class TokenTransactionService {
       where: {
         user: { id: userId }
       },
-      relations: ['inviter'], 
+      relations: ['inviter'],
       order: {
         createdAt: 'DESC',
       },
