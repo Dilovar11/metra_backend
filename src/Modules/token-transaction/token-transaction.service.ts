@@ -98,7 +98,7 @@ export class TokenTransactionService {
         type: 'redirect',
         return_url: 'https://www.google.com', // Заглушка для теста
       },
-      description: `Заказ №${transaction.id}`,
+      description: "Оплата заказа",
       metadata: {
         order_id: String(transaction.id), // ЮKassa любит строки в метаданных
       }
