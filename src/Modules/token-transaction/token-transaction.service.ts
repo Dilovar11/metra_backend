@@ -57,7 +57,7 @@ export class TokenTransactionService {
         throw new Error('Could not find YooCheckout constructor in yookassa module');
       }
       this.checkout = new YooKassa.YooCheckout({
-        shopId: '513616',
+        shopId: '1272019',
         secretKey: 'test_*gZP0cwPbDpFAo6GSI4Ug31ZHaqO79Yicct7WuDgOonqc',
       });
     } catch (e) {
