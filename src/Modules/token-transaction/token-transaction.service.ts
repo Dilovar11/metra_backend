@@ -35,7 +35,7 @@ interface ICreatePayment {
 export class TokenTransactionService {
 
   private readonly SHOP_ID = '1272019';
-  private readonly SECRET_KEY = 'test_*gZP0cwPbDpFAo6GSI4Ug31ZHaqO79Yicct7WuDgOonqc';
+  private readonly SECRET_KEY = 'test_ZuHKwKoGiARiU9TNoKNpQ2R5BmTCQ3vyYRZ5wZvvSnU';
   constructor(
 
 
