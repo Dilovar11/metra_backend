@@ -4,40 +4,22 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { Any, DataSource, Double, Repository } from 'typeorm';
 import { TokenTransaction } from '../../Entities/token-transaction.entity';
 import { TokenBalance } from '../../Entities/token-balance.entity';
 import { User } from '../../Entities/user.entity';
 import { CreateTokenTransactionDto } from './dto/create-token-transaction.dto';
 import { PaymentTransaction } from '../../Entities/payment-transaction';
 import { TokenBalanceService } from '../token-balance/token-balance.service';
-const YooKassa = require('yookassa');
 import { v4 as uuidv4 } from 'uuid'; // для ключа идемпотентности
 import axios from 'axios';
-
-interface ICreatePayment {
-  amount: {
-    value: string;
-    currency: string;
-  };
-  payment_method_data?: {
-    type: string;
-  };
-  confirmation: {
-    type: 'redirect';
-    return_url: string;
-  };
-  description?: string;
-  metadata?: Record<string, any>;
-}
 
 @Injectable()
 export class TokenTransactionService {
 
-  private checkout: any;
-
+  private readonly SHOP_ID = '1272019';
+  private readonly SECRET_KEY = 'test_ZuHKwKoGiARiU9TNoKNpQ2R5BmTCQ3vyYRZ5wZvvSnU';
   constructor(
-    private dataSource: DataSource,
 
 
     @InjectRepository(PaymentTransaction) private transactionRepo: Repository<PaymentTransaction>,
@@ -50,46 +32,42 @@ export class TokenTransactionService {
     @InjectRepository(User)
     private userRepo: Repository<User>,
   ) {
-    try {
-      // Пытаемся инициализировать через разные варианты экспорта
-      const CheckoutClass = YooKassa.YooCheckout || (YooKassa.default && YooKassa.default.YooCheckout);
-
-      if (!CheckoutClass) {
-        throw new Error('Could not find YooCheckout constructor in yookassa module');
-      }
-      this.checkout = new YooKassa.YooCheckout({
-        shopId: '1272019',
-        secretKey: 'test_ZuHKwKoGiARiU9TNoKNpQ2R5BmTCQ3vyYRZ5wZvvSnU',
-      });
-    } catch (e) {
-      console.error('Yookassa Init Error:', e.message);
-    }
   }
 
 
 
   async createAcquiringOrder(userId: string, tokensAmount: number) {
-    const user = await this.userRepo.findOne({ where: { id: userId }, relations: ['inviter'] });
+    // Важно: подгружаем инвайтера через relations
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['inviter']
+    });
+
     if (!user) throw new NotFoundException('User not found');
 
     const priceMap = { 100: 390, 300: 990, 1000: 2790, 5000: 11990 };
     const amountValue = priceMap[tokensAmount];
     if (!amountValue) throw new BadRequestException('Invalid tokens amount');
 
-    // Сначала сохраняем в свою БД
+    // Исправлено: добавляем referralBonus, чтобы база не ругалась
+    let referralBonus = 0.00
+    if (user.inviter){
+      referralBonus = amountValue * 0.25
+    }
+
     const transaction = this.transactionRepo.create({
       amount: amountValue,
-      referralBonus: amountValue * 0.25,
+      referralBonus: referralBonus,
       user: user,
-      inviter: user.inviter,
+      inviter: user.inviter || null,
       status: 'PENDING'
     });
+
     await this.transactionRepo.save(transaction);
 
-    // Подготовка объекта строго по документации
     const createPayload = {
       amount: {
-        value: amountValue.toFixed(2), // "390.00" - строго строка с двумя знаками
+        value: amountValue.toFixed(2),
         currency: 'RUB',
       },
       payment_method_data: {
@@ -97,35 +75,42 @@ export class TokenTransactionService {
       },
       confirmation: {
         type: 'redirect',
-        return_url: 'https://www.google.com', // Заглушка для теста
+        return_url: 'https://metra-front.vercel.app/profile',
       },
-      description: "Оплата заказа",
+      description: `Пополнение: ${tokensAmount} токенов`,
       metadata: {
-        order_id: String(transaction.id), // ЮKassa любит строки в метаданных
+        order_id: transaction.id,
       }
     };
 
-    const idempotencyKey = uuidv4();
+    const auth = Buffer.from(`${this.SHOP_ID}:${this.SECRET_KEY}`).toString('base64');
 
     try {
-      // Используем метод createPayment
-      const payment = await this.checkout.createPayment(createPayload, idempotencyKey);
+      const response = await axios.post(
+        'https://api.yookassa.ru/v3/payments',
+        createPayload,
+        {
+          headers: {
+            'Idempotence-Key': uuidv4(),
+            'Authorization': `Basic ${auth}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-      transaction.externalId = payment.id;
+      transaction.externalId = response.data.id;
       await this.transactionRepo.save(transaction);
 
       return {
-        url: payment.confirmation.confirmation_url,
-        paymentId: payment.id
+        url: response.data.confirmation.confirmation_url,
+        paymentId: response.data.id
       };
-    } catch (error) {
-      // Если снова 400, этот лог покажет КТО виноват
-      console.error('Детали ошибки ЮKassa:', error.response?.data || error.message);
 
-      throw new BadRequestException({
-        message: 'ЮKassa отклонила запрос',
-        details: error.response?.data?.description || 'Неверные параметры платежа'
-      });
+    } catch (error) {
+      console.error('Yookassa API Error:', error.response?.data || error.message);
+      throw new BadRequestException(
+        error.response?.data?.description || 'Ошибка при связи с ЮKassa'
+      );
     }
   }
 
