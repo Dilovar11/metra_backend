@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Query, HttpCode, Req, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, HttpCode, Req, HttpStatus, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { TokenTransactionService } from './token-transaction.service';
 
@@ -8,13 +8,25 @@ export class TokenTransactionController {
   constructor(private readonly service: TokenTransactionService) { }
 
   @Post('create-order')
-  @ApiOperation({ summary: 'Создать заказ на покупку токенов (ЮKassa)' })
-  @ApiQuery({ name: 'userId', description: 'ID пользователя' })
-  @ApiQuery({ name: 'tokensAmount', enum: [100, 300, 1000, 5000], description: 'Количество токенов' })
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Создать платеж в ЮKassa и получить ссылку на оплату' })
+  @ApiQuery({ name: 'userId', required: true, description: 'ID пользователя' })
+  @ApiQuery({
+    name: 'tokensAmount',
+    required: true,
+    enum: [100, 300, 1000, 5000],
+    description: 'Количество покупаемых токенов'
+  })
+  @ApiResponse({ status: 201, description: 'Возвращает URL для редиректа на оплату' })
   async createOrder(
     @Query('userId') userId: string,
-    @Query('tokensAmount') tokensAmount: string // Приходит строкой из Query
+    @Query('tokensAmount') tokensAmount: string
   ) {
+    if (!userId || !tokensAmount) {
+      throw new BadRequestException('userId и tokensAmount обязательны');
+    }
+
+    // Преобразуем tokensAmount в число, так как из Query всё приходит строкой
     return this.service.createAcquiringOrder(userId, Number(tokensAmount));
   }
 

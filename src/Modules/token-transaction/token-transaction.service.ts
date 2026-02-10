@@ -68,30 +68,27 @@ export class TokenTransactionService {
 
 
   async createAcquiringOrder(userId: string, tokensAmount: number) {
-    // 1. Поиск пользователя
     const user = await this.userRepo.findOne({ where: { id: userId }, relations: ['inviter'] });
     if (!user) throw new NotFoundException('User not found');
 
-    // 2. Определение стоимости
     const priceMap = { 100: 390, 300: 990, 1000: 2790, 5000: 11990 };
-    const amount = priceMap[tokensAmount];
-    if (!amount) throw new BadRequestException('Invalid tokens amount');
+    const amountValue = priceMap[tokensAmount];
+    if (!amountValue) throw new BadRequestException('Invalid tokens amount');
 
-    // 3. Создаем запись транзакции в нашей базе данных
+    // Сначала сохраняем в свою БД
     const transaction = this.transactionRepo.create({
-      amount: amount,
-      referralBonus: amount * 0.25,
+      amount: amountValue,
+      referralBonus: amountValue * 0.25,
       user: user,
       inviter: user.inviter,
       status: 'PENDING'
     });
     await this.transactionRepo.save(transaction);
 
-
-    // Подготовка данных
-    const createPayload: ICreatePayment = {
+    // Подготовка объекта строго по документации
+    const createPayload = {
       amount: {
-        value: amount.toFixed(2),
+        value: amountValue.toFixed(2), // "390.00" - строго строка с двумя знаками
         currency: 'RUB',
       },
       payment_method_data: {
@@ -99,20 +96,18 @@ export class TokenTransactionService {
       },
       confirmation: {
         type: 'redirect',
-        // ВАЖНО: Используйте корректный URL. 
-        // Если тестируете локально, лучше временно поставить google.com
-        return_url: 'https://www.google.com',
+        return_url: 'https://www.google.com', // Заглушка для теста
       },
-      description: `Пополнение баланса: ${tokensAmount} токенов`,
+      description: `Заказ №${transaction.id}`,
       metadata: {
-        order_id: transaction.id,
-        userId: user.id
+        order_id: String(transaction.id), // ЮKassa любит строки в метаданных
       }
     };
 
     const idempotencyKey = uuidv4();
 
     try {
+      // Используем метод createPayment
       const payment = await this.checkout.createPayment(createPayload, idempotencyKey);
 
       transaction.externalId = payment.id;
@@ -123,19 +118,13 @@ export class TokenTransactionService {
         paymentId: payment.id
       };
     } catch (error) {
-      // ВАЖНО: Выводим подробности ошибки в консоль сервера
-      console.error('--- ЮKASSA API ERROR DETAILS ---');
-      if (error.response) {
-        console.error('Status:', error.response.status);
-        console.error('Body:', JSON.stringify(error.response.data, null, 2));
-      } else {
-        console.error('Error Message:', error.message);
-      }
-      console.error('---------------------------------');
+      // Если снова 400, этот лог покажет КТО виноват
+      console.error('Детали ошибки ЮKassa:', error.response?.data || error.message);
 
-      throw new BadRequestException(
-        error.response?.data?.description || 'Не удалось инициировать платеж'
-      );
+      throw new BadRequestException({
+        message: 'ЮKassa отклонила запрос',
+        details: error.response?.data?.description || 'Неверные параметры платежа'
+      });
     }
   }
 
