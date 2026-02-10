@@ -54,22 +54,29 @@ export class TokenTransactionService {
 
 
   async createAcquiringOrder(userId: string, tokensAmount: number) {
-    const user = await this.userRepo.findOne({ where: { id: userId } });
+    // Важно: подгружаем инвайтера через relations
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['inviter']
+    });
+
     if (!user) throw new NotFoundException('User not found');
 
     const priceMap = { 100: 390, 300: 990, 1000: 2790, 5000: 11990 };
     const amountValue = priceMap[tokensAmount];
     if (!amountValue) throw new BadRequestException('Invalid tokens amount');
 
-    // 1. Создаем транзакцию в БД
+    // Исправлено: добавляем referralBonus, чтобы база не ругалась
     const transaction = this.transactionRepo.create({
       amount: amountValue,
+      referralBonus: amountValue * 0.25,
       user: user,
+      inviter: user.inviter || null,
       status: 'PENDING'
     });
+
     await this.transactionRepo.save(transaction);
 
-    // 2. Готовим данные для ЮKassa
     const createPayload = {
       amount: {
         value: amountValue.toFixed(2),
@@ -80,15 +87,14 @@ export class TokenTransactionService {
       },
       confirmation: {
         type: 'redirect',
-        return_url: 'https://metra-ai.ru/profile', // Куда вернется юзер
+        return_url: 'https://metra-front.vercel.app/profile',
       },
-      description: `Пополнение баланса: ${tokensAmount} токенов`,
+      description: `Пополнение: ${tokensAmount} токенов`,
       metadata: {
         order_id: transaction.id,
       }
     };
 
-    // 3. Делаем прямой запрос к API ЮKassa
     const auth = Buffer.from(`${this.SHOP_ID}:${this.SECRET_KEY}`).toString('base64');
 
     try {
@@ -104,20 +110,16 @@ export class TokenTransactionService {
         }
       );
 
-      const payment = response.data;
-
-      // 4. Сохраняем внешний ID и возвращаем ссылку
-      transaction.externalId = payment.id;
+      transaction.externalId = response.data.id;
       await this.transactionRepo.save(transaction);
 
       return {
-        url: payment.confirmation.confirmation_url,
-        paymentId: payment.id
+        url: response.data.confirmation.confirmation_url,
+        paymentId: response.data.id
       };
 
     } catch (error) {
       console.error('Yookassa API Error:', error.response?.data || error.message);
-
       throw new BadRequestException(
         error.response?.data?.description || 'Ошибка при связи с ЮKassa'
       );
