@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Body, Query, HttpCode, Req, HttpStatus, BadRequestException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { TokenTransactionService } from './token-transaction.service';
 
 @ApiTags('TokenTransactions')
@@ -32,8 +32,8 @@ export class TokenTransactionController {
 
   @Post('webhook/yookassa')
   @HttpCode(HttpStatus.OK)
+  @ApiExcludeEndpoint()
   async handleYookassaWebhook(@Body() data: any) {
-    // Этот метод ЮKassa будет вызывать сама при успешной оплате
     return this.service.handleWebhook(data);
   }
 
