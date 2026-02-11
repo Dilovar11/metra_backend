@@ -51,7 +51,7 @@ export class TokenTransactionService {
 
     // Исправлено: добавляем referralBonus, чтобы база не ругалась
     let referralBonus = 0.00
-    if (user.inviter){
+    if (user.inviter) {
       referralBonus = amountValue * 0.25
     }
 
@@ -114,36 +114,76 @@ export class TokenTransactionService {
     }
   }
 
-
   async handleWebhook(data: any) {
-    // ЮKassa присылает событие payment.succeeded
-    if (data.event !== 'payment.succeeded') return;
+    // 1. Проверяем событие. ЮKassa присылает уведомление только на определенные статусы.
+    if (data.event !== 'payment.succeeded') {
+      console.log(`[Webhook] Пропускаем событие: ${data.event}`);
+      return;
+    }
 
     const payment = data.object;
-    const orderId = payment.metadata.order_id;
+    const orderId = payment.metadata?.order_id;
 
+    if (!orderId) {
+      console.error('[Webhook] Ошибка: В метаданных платежа отсутствует order_id');
+      return;
+    }
+
+    // 2. Ищем транзакцию. Используем блокировку или проверяем статус, чтобы не начислить дважды
     const transaction = await this.transactionRepo.findOne({
       where: { id: orderId },
       relations: ['user', 'inviter']
     });
 
-    if (transaction && transaction.status === 'PENDING') {
+    if (!transaction) {
+      console.error(`[Webhook] Транзакция ${orderId} не найдена в базе`);
+      return;
+    }
+
+    // Защита от повторной обработки (Idempotency на стороне БД)
+    if (transaction.status !== 'PENDING') {
+      console.log(`[Webhook] Транзакция ${orderId} уже имеет статус ${transaction.status}`);
+      return;
+    }
+
+    try {
+      // 3. Обновляем статус транзакции
       transaction.status = 'SUCCESS';
+      // Сохраняем ID платежа от ЮKassa, если вдруг он не сохранился при создании
+      transaction.externalId = payment.id;
       await this.transactionRepo.save(transaction);
 
-      // Логика начисления токенов (как у вас и была)
-      const amountToTokens = { '390.00': 100, '990.00': 300, '2790.00': 1000, '11990.00': 5000 };
-      const purchasedTokens = amountToTokens[String(transaction.amount)] || 0;
+      // 4. Логика начисления токенов
+      // Используем числа для ключей, чтобы избежать проблем с форматом строк "390.00" vs "390"
+      const amountToTokens: Record<number, number> = {
+        390: 100,
+        990: 300,
+        2790: 1000,
+        11990: 5000
+      };
+
+      // Приводим сумму к числу перед поиском в мапе
+      const purchasedTokens = amountToTokens[Number(transaction.amount)] || 0;
 
       if (purchasedTokens > 0) {
         await this.tokenBalanceService.addTokens(transaction.user.id, purchasedTokens);
+        console.log(`[Webhook] Начислено ${purchasedTokens} токенов пользователю ${transaction.user.id}`);
       }
 
-      if (transaction.inviter) {
+      // 5. Начисляем бонус пригласившему
+      if (transaction.inviter && transaction.referralBonus > 0) {
         await this.tokenBalanceService.addBonus(transaction.inviter.id, transaction.referralBonus);
+        console.log(`[Webhook] Начислен бонус ${transaction.referralBonus} пригласившему ${transaction.inviter.id}`);
       }
+
+    } catch (error) {
+      console.error(`[Webhook] Ошибка при обработке транзакции ${orderId}:`, error);
+      // Здесь можно бросить ошибку, чтобы NestJS вернул не-200 статус, 
+      // и ЮKassa повторила уведомление позже
+      throw error;
     }
   }
+
 
 
   async findAll() {
