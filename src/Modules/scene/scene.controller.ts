@@ -34,12 +34,16 @@ export class SceneController {
 
     @Post()
     @UseInterceptors(FileInterceptor('image'))
+    @ApiOperation({
+        summary: 'Создать новую сцену',
+        description: 'Метод принимает данные сцены и файл изображения, загружает его в облако и сохраняет запись в БД.'
+    })
     @ApiConsumes('multipart/form-data')
     @ApiBody({
         schema: {
             type: 'object',
             properties: {
-                image: { type: 'string', format: 'binary' }, 
+                image: { type: 'string', format: 'binary' },
                 mode: { type: 'string', enum: Object.values(SceneMode) },
                 type: { type: 'string', enum: Object.values(SceneType) },
                 name: { type: 'string' },
