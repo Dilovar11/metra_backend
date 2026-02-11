@@ -15,17 +15,23 @@ export class CreateSceneDto {
         enum: SceneType,
         enumName: 'SceneType',
         description: 'Выберите категорию контента',
-        example: SceneType.HOME_PORTRAIT 
+        example: SceneType.HOME_PORTRAIT
     })
     type: SceneType;
 
-    @ApiProperty({ 
+    @ApiProperty({
         example: 'Уютный вечер у камина',
-        description: 'Название сцены' 
+        description: 'Название сцены'
     })
     name: string;
 
-    @ApiProperty({ 
+    @ApiProperty({
+        example: 'Мягкий свет, уют, естественность',
+        description: 'Описание сцены'
+    })
+    description: string;
+
+    @ApiProperty({
         example: 'High quality portrait, cinematic lighting, cozy atmosphere...',
         description: 'Промпт для генерации'
     })

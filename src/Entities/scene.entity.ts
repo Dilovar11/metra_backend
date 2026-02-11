@@ -24,7 +24,7 @@ export class Scene {
     @Column({
         type: 'enum',
         enum: SceneMode,
-        default: SceneMode.TEMPLATE 
+        default: SceneMode.TEMPLATE
     })
     mode: SceneMode;
 
@@ -36,6 +36,12 @@ export class Scene {
 
     @Column()
     name: string;
+
+    @Column()
+    description: string;
+
+    @Column()
+    image: string;
 
     @Column({ type: 'text' })
     prompt: string;

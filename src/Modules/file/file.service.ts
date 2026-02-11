@@ -38,6 +38,20 @@ export class FilesService {
     });
   }
 
+  async saveFileScene(files: Array<Express.Multer.File>, fileName: string) {
+    const userFolder = `metra_files_scene`;
+    const uploadPromises = files.map((file) => {
+      const customFileName = `${fileName}`;
+      return this.uploadToCloudinary(file, userFolder, customFileName);
+    });
+    const results = await Promise.all(uploadPromises);
+    return results.map((result, index) => ({
+      originalName: files[index].originalname,
+      filename: result.public_id,
+      url: result.secure_url,
+    }));
+  }
+
   async saveFileAvatar(files: Array<Express.Multer.File>, userId: string) {
     const userFolder = `metra_files_for_avatars`;
     const uploadPromises = files.map((file, index) => {
@@ -90,16 +104,16 @@ export class FilesService {
     }
   }
 
-async saveFileImage(file: Express.Multer.File, userId: string) {
-  const userFolder = `metra_files_for_generations/${userId}`;
-  const customFileName = `${userId}`;
-  const result = await this.uploadToCloudinary(file, userFolder, customFileName);
-  return {
-    originalName: file.originalname,
-    filename: result.public_id,
-    url: result.secure_url,
-  };
-}
+  async saveFileImage(file: Express.Multer.File, userId: string) {
+    const userFolder = `metra_files_for_generations/${userId}`;
+    const customFileName = `${userId}`;
+    const result = await this.uploadToCloudinary(file, userFolder, customFileName);
+    return {
+      originalName: file.originalname,
+      filename: result.public_id,
+      url: result.secure_url,
+    };
+  }
 
   async saveGeneratedImage(file: Express.Multer.File, userId: string) {
     const userFolder = `metra_generations/${userId}`;

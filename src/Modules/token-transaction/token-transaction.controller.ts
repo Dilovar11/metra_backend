@@ -32,8 +32,6 @@ export class TokenTransactionController {
 
   @Post('webhook/yookassa')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Обработка уведомлений от ЮKassa' })
-  @ApiBody({ description: 'Данные уведомления от ЮKassa' })
   async handleYookassaWebhook(@Body() data: any) {
     // Этот метод ЮKassa будет вызывать сама при успешной оплате
     return this.service.handleWebhook(data);
