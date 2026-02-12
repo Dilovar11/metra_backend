@@ -62,10 +62,6 @@ export class SceneController {
                     type: 'string',
                     description: 'Название сцены'
                 },
-                description: {
-                    type: 'string',
-                    description: 'Описание сцены'
-                },
                 prompt: {
                     type: 'string',
                     description: 'Промпт для нейросети'

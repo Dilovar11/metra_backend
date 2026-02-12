@@ -15,6 +15,9 @@ export class SceneCategory {
     @Column()
     image: string;
 
+    @Column({ type: 'text' })
+    description: string;
+
     @OneToMany(() => Scene, (scene) => scene.category)
     scenes: Scene[];
 }

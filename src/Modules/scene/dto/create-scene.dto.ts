@@ -22,12 +22,6 @@ export class CreateSceneDto {
     name: string;
 
     @ApiProperty({
-        example: 'Мягкий свет, уют, естественность',
-        description: 'Описание сцены'
-    })
-    description: string;
-
-    @ApiProperty({
         example: 'High quality portrait, cinematic lighting...',
         description: 'Промпт для генерации'
     })

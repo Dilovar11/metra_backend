@@ -9,4 +9,10 @@ export class CreateSceneCategoryDto {
     @IsString()
     @IsNotEmpty()
     name: string;
+
+    @ApiProperty({
+        example: 'Мягкий свет, уют, естественность',
+        description: 'Описание сцены'
+    })
+    description: string;
 }

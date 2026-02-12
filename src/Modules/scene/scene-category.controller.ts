@@ -17,14 +17,15 @@ export class SceneCategoryController {
 
     @Post()
     @ApiOperation({ summary: 'Создать новую категорию с изображением' })
-    @UseInterceptors(FileInterceptor('image')) // 'image' — это имя поля в form-data
-    @ApiConsumes('multipart/form-data') 
+    @UseInterceptors(FileInterceptor('image')) // 
+    @ApiConsumes('multipart/form-data')
     @ApiBody({
         schema: {
             type: 'object',
             properties: {
-                name: { type: 'string' },
-                image: { type: 'string', format: 'binary' },
+                name: { type: 'string', description: 'Название категории'},
+                image: { type: 'string', format: 'binary', description: 'Файл изображения' },
+                description: { type: 'string', description: 'Описание категории' },
             },
         },
     })

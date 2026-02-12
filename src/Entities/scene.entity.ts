@@ -25,9 +25,6 @@ export class Scene {
     @Column()
     name: string;
 
-    @Column({ type: 'text'})
-    description: string;
-
     @Column()
     image: string;
 
