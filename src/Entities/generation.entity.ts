@@ -7,7 +7,6 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from './user.entity';
-import { GenerationMedia } from './generation-media.entity';
 
 export enum GenerationType {
   PHOTO_BY_STAGE = 'photo_by_state',
@@ -39,9 +38,6 @@ export class Generation {
 
   @Column({ nullable: true })
   externalTaskId: string;
-
-  @OneToMany(() => GenerationMedia, (media) => media.generation)
-  media: GenerationMedia[];
 
   @CreateDateColumn()
   createdAt: Date;
