@@ -2,7 +2,7 @@ import { Controller, Get, Post, Delete, Body, Param, ParseIntPipe, Query, UseInt
 import { ApiTags, ApiOperation, ApiQuery, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { SceneService } from './scene.service';
 import { CreateSceneDto } from './dto/create-scene.dto';
-import { SceneType, SceneMode } from '../../Entities/scene.entity';
+import { SceneMode } from '../../Entities/scene.entity';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Scenes (Сцены)')
@@ -19,17 +19,16 @@ export class SceneController {
         description: 'Фильтр по режиму (Template или FreeStyle)'
     })
     @ApiQuery({
-        name: 'type',
-        enum: SceneType,
+        name: 'categoryId',
+        type: Number,
         required: false,
-        description: 'Фильтр по типу сцены'
+        description: 'ID категории из таблицы scene_categories'
     })
     findAll(
         @Query('mode') mode?: SceneMode,
-        @Query('type') type?: SceneType,
+        @Query('categoryId') categoryId?: number, // Теперь фильтруем по ID
     ) {
-        // Передаем оба параметра в сервис
-        return this.sceneService.findAll(mode, type);
+        return this.sceneService.findAll(mode, categoryId);
     }
 
     @Post()
@@ -42,17 +41,43 @@ export class SceneController {
     @ApiBody({
         schema: {
             type: 'object',
+            required: ['image', 'name', 'categoryId', 'mode'], // Обязательные поля
             properties: {
-                image: { type: 'string', format: 'binary' },
-                mode: { type: 'string', enum: Object.values(SceneMode) },
-                type: { type: 'string', enum: Object.values(SceneType) },
-                name: { type: 'string' },
-                description: { type: 'string' },
-                prompt: { type: 'string' },
+                image: {
+                    type: 'string',
+                    format: 'binary',
+                    description: 'Файл изображения'
+                },
+                mode: {
+                    type: 'string',
+                    enum: Object.values(SceneMode),
+                    description: 'Режим сцены'
+                },
+                categoryId: {
+                    type: 'number',
+                    description: 'ID существующей категории',
+                    example: 1
+                },
+                name: {
+                    type: 'string',
+                    description: 'Название сцены'
+                },
+                description: {
+                    type: 'string',
+                    description: 'Описание сцены'
+                },
+                prompt: {
+                    type: 'string',
+                    description: 'Промпт для нейросети'
+                },
             },
         },
     })
-    create(@Body() dto: CreateSceneDto, @UploadedFile() file: Express.Multer.File) {
+    create(
+        @Body() dto: CreateSceneDto,
+        @UploadedFile() file: Express.Multer.File
+    ) {
+        // Убедитесь, что в CreateSceneDto поле называется categoryId
         return this.sceneService.create(dto, file);
     }
 

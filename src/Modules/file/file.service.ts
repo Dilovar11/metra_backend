@@ -38,6 +38,20 @@ export class FilesService {
     });
   }
 
+  async saveFileSceneCategory(files: Array<Express.Multer.File>, fileName: string) {
+    const userFolder = `metra_files_scene_category`;
+    const uploadPromises = files.map((file) => {
+      const customFileName = `${fileName}`;
+      return this.uploadToCloudinary(file, userFolder, customFileName);
+    });
+    const results = await Promise.all(uploadPromises);
+    return results.map((result, index) => ({
+      originalName: files[index].originalname,
+      filename: result.public_id,
+      url: result.secure_url,
+    }));
+  }
+
   async saveFileScene(files: Array<Express.Multer.File>, fileName: string) {
     const userFolder = `metra_files_scene`;
     const uploadPromises = files.map((file) => {

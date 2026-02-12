@@ -1,23 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
-// Не забудьте экспортировать SceneMode из файла сущности
-import { SceneType, SceneMode } from '../../../Entities/scene.entity';
+import { SceneMode } from '../../../Entities/scene.entity';
 
 export class CreateSceneDto {
     @ApiProperty({
         enum: SceneMode,
-        enumName: 'SceneMode',
         description: 'Режим сцены: Шаблон или Свободный стиль',
         example: SceneMode.TEMPLATE
     })
     mode: SceneMode;
 
     @ApiProperty({
-        enum: SceneType,
-        enumName: 'SceneType',
-        description: 'Выберите категорию контента',
-        example: SceneType.HOME_PORTRAIT
+        example: 1,
+        description: 'ID категории из таблицы SceneCategory'
     })
-    type: SceneType;
+    categoryId: number; // Теперь передаем ID числом
 
     @ApiProperty({
         example: 'Уютный вечер у камина',
@@ -32,8 +28,9 @@ export class CreateSceneDto {
     description: string;
 
     @ApiProperty({
-        example: 'High quality portrait, cinematic lighting, cozy atmosphere...',
+        example: 'High quality portrait, cinematic lighting...',
         description: 'Промпт для генерации'
     })
     prompt: string;
 }
+

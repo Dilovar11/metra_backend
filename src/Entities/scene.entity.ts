@@ -1,16 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { SceneCategory } from './scene-category.entity';
 
-// Существующие типы контента
-export enum SceneType {
-    HOME_PORTRAIT = 'Домашний портрет',
-    STUDIO_LOOK = 'Студийный образ',
-    CITY_EVENING = 'Городской вечер',
-    WINTER_LOOK = 'Зимний образ',
-    PROFILE_AVATAR = 'Профиль / Аватар',
-    COUPLE_DUO = 'Пара / Duo',
-}
-
-// Новый тип для определения режима создания
 export enum SceneMode {
     TEMPLATE = 'Template',
     FREE_STYLE = 'FreeStyle',
@@ -28,16 +18,14 @@ export class Scene {
     })
     mode: SceneMode;
 
-    @Column({
-        type: 'enum',
-        enum: SceneType,
-    })
-    type: SceneType;
+    @ManyToOne(() => SceneCategory, (category) => category.scenes, { onDelete: 'SET NULL' })
+    @JoinColumn({ name: 'categoryId' })
+    category: SceneCategory;
 
     @Column()
     name: string;
 
-    @Column()
+    @Column({ type: 'text'})
     description: string;
 
     @Column()
