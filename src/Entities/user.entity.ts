@@ -32,7 +32,7 @@ export class User {
   @JoinColumn({ name: 'inviterId' })
   inviter: User;
 
-  // Список людей, которых пригласил этот пользователь
+  // Список людей, которых пригласил этот пользователь 
   @OneToMany(() => User, (user) => user.inviter)
   referrals: User[];
 
