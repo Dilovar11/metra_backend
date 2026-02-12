@@ -4,7 +4,6 @@ import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { User } from '../../Entities/user.entity';
 import { Avatar } from '../../Entities/avatar.entity';
-import { BodyPhoto } from '../../Entities/body-photo.entity';
 import { TokenBalance } from '../../Entities/token-balance.entity';
 import { Subscription } from '../../Entities/subscription.entity';
 import { Generation } from '../../Entities/generation.entity';
@@ -16,7 +15,6 @@ import { Referral } from '../../Entities/referral.entity';
     TypeOrmModule.forFeature([
       User,
       Avatar,
-      BodyPhoto,
       TokenBalance,
       Subscription,
       Generation,
