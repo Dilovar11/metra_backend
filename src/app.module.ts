@@ -2,8 +2,6 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './Modules/user/users.module';
 import { AvatarModule } from './Modules/avatar/avatar.module';
-import { BodyPhotoModule } from './Modules/body-photo/body-photo.module';
-import { GenerationMediaModule } from './Modules/generation-media/generation-media.module';
 import { GenerationModule } from './Modules/generation/generation.module';
 import { ReferralModule } from './Modules/referral/referral.module';
 import { SubscriptionModule } from './Modules/subscription/subscription.module';
@@ -52,8 +50,6 @@ import { SceneModule } from './Modules/scene/scene.module';
     ReferralModule,
     TokenBalanceModule,
     TokenTransactionModule,
-    BodyPhotoModule,
-    GenerationMediaModule,
     SubscriptionModule,
     SupportTicketModule,
   ],
