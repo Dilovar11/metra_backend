@@ -30,6 +30,28 @@ export class TokenTransactionController {
     return this.service.createAcquiringOrder(userId, Number(tokensAmount));
   }
 
+  @Post('create-subscription-order')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Создать платеж по подписке (subscription)' })
+  @ApiQuery({ name: 'userId', required: true, description: 'ID пользователя' })
+  @ApiQuery({
+    name: 'amount',
+    required: true,
+    enum: [990, 2490, 4990],
+    description: 'Сумма пакета в рублях'
+  })
+  @ApiResponse({ status: 201, description: 'Возвращает URL для оплаты' })
+  async createCustomOrder(
+    @Query('userId') userId: string,
+    @Query('amount') amount: string
+  ) {
+    if (!userId || !amount) {
+      throw new BadRequestException('userId и amount обязательны');
+    }
+    return this.service.createSubscribAcquiringOrder(userId, Number(amount));
+  }
+
+
   @Post('webhook/yookassa')
   @HttpCode(HttpStatus.OK)
   @ApiExcludeEndpoint()

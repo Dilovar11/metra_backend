@@ -18,17 +18,20 @@ export class PaymentTransaction {
   @Column('decimal', { precision: 10, scale: 2 })
   referralBonus: number; // Те самые 25% (amount * 0.25)
 
+  @Column({ type: 'int', default: 0 })
+  tokens: number;
+
   @Column({ default: 'PENDING' })
-  status: string; 
+  status: string;
 
   @Column({ nullable: true })
   externalId: string;
 
   @ManyToOne(() => User)
-  user: User; 
+  user: User;
 
   @ManyToOne(() => User)
-  inviter: User; 
+  inviter: User;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -57,6 +57,7 @@ export class TokenTransactionService {
 
     const transaction = this.transactionRepo.create({
       amount: amountValue,
+      tokens: tokensAmount,
       referralBonus: referralBonus,
       user: user,
       inviter: user.inviter || null,
@@ -114,6 +115,87 @@ export class TokenTransactionService {
     }
   }
 
+
+  async createSubscribAcquiringOrder(userId: string, amountValue: number) {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['inviter']
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    const tokenMap = { 990: 120, 2490: 350, 4990: 800 };
+    const tokensAmount = tokenMap[amountValue];
+
+    if (!tokensAmount) throw new BadRequestException('Недопустимая сумма платежа');
+
+    let referralBonus = 0.00;
+    if (user.inviter) {
+      referralBonus = amountValue * 0.25;
+    }
+
+    const transaction = this.transactionRepo.create({
+      amount: amountValue,
+      tokens: tokensAmount,
+      referralBonus: referralBonus,
+      user: user,
+      inviter: user.inviter || null,
+      status: 'PENDING'
+    });
+
+    await this.transactionRepo.save(transaction);
+
+    // 5. Формируем payload для ЮKassa
+    const createPayload = {
+      amount: {
+        value: amountValue.toFixed(2),
+        currency: 'RUB',
+      },
+      payment_method_data: {
+        type: 'bank_card',
+      },
+      confirmation: {
+        type: 'redirect',
+        return_url: 'https://metra-front.vercel.app/profile',
+      },
+      description: `Пополнение: ${tokensAmount} токенов (Пакет ${amountValue} руб.)`,
+      metadata: {
+        order_id: transaction.id,
+      }
+    };
+
+    const auth = Buffer.from(`${this.SHOP_ID}:${this.SECRET_KEY}`).toString('base64');
+
+    try {
+      const response = await axios.post(
+        'https://api.yookassa.ru/v3/payments',
+        createPayload,
+        {
+          headers: {
+            'Idempotence-Key': uuidv4(),
+            'Authorization': `Basic ${auth}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      transaction.externalId = response.data.id;
+      await this.transactionRepo.save(transaction);
+
+      return {
+        url: response.data.confirmation.confirmation_url,
+        paymentId: response.data.id
+      };
+
+    } catch (error) {
+      console.error('Yookassa API Error:', error.response?.data || error.message);
+      throw new BadRequestException(
+        error.response?.data?.description || 'Ошибка при связи с ЮKassa'
+      );
+    }
+  }
+
+
   async handleWebhook(data: any) {
     // 1. Проверяем событие. ЮKassa присылает уведомление только на определенные статусы.
     if (data.event !== 'payment.succeeded') {
@@ -129,7 +211,6 @@ export class TokenTransactionService {
       return;
     }
 
-    // 2. Ищем транзакцию. Используем блокировку или проверяем статус, чтобы не начислить дважды
     const transaction = await this.transactionRepo.findOne({
       where: { id: orderId },
       relations: ['user', 'inviter']
@@ -154,16 +235,7 @@ export class TokenTransactionService {
       await this.transactionRepo.save(transaction);
 
       // 4. Логика начисления токенов
-      // Используем числа для ключей, чтобы избежать проблем с форматом строк "390.00" vs "390"
-      const amountToTokens: Record<number, number> = {
-        390: 100,
-        990: 300,
-        2790: 1000,
-        11990: 5000
-      };
-
-      // Приводим сумму к числу перед поиском в мапе
-      const purchasedTokens = amountToTokens[Number(transaction.amount)] || 0;
+      const purchasedTokens = transaction.tokens;
 
       if (purchasedTokens > 0) {
         await this.tokenBalanceService.addTokens(transaction.user.id, purchasedTokens);
@@ -178,8 +250,6 @@ export class TokenTransactionService {
 
     } catch (error) {
       console.error(`[Webhook] Ошибка при обработке транзакции ${orderId}:`, error);
-      // Здесь можно бросить ошибку, чтобы NestJS вернул не-200 статус, 
-      // и ЮKassa повторила уведомление позже
       throw error;
     }
   }
