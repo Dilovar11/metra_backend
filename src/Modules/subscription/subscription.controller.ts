@@ -1,5 +1,5 @@
-import { Controller, Post, Get, Patch, Param, Body, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Post, Get, Patch, Param, Body, Query, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { SubscriptionService } from './subscription.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
@@ -7,14 +7,23 @@ import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 @ApiTags('Subscriptions')
 @Controller('subscriptions')
 export class SubscriptionController {
-  constructor(private readonly service: SubscriptionService) {}
+  constructor(private readonly service: SubscriptionService) { }
 
   @Post()
-  @ApiOperation({ summary: 'Создать подписку' })
-  @ApiResponse({ status: 201 })
+  @ApiOperation({ summary: 'Создать новую подписку для пользователя' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Подписка успешно создана'
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Ошибка валидации (например, неверный план)'
+  })
+  @ApiBody({ type: CreateSubscriptionDto }) 
   create(@Body() dto: CreateSubscriptionDto) {
     return this.service.create(dto);
   }
+
 
   @Get()
   @ApiOperation({ summary: 'Все подписки' })
