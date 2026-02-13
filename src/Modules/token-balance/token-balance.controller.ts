@@ -2,11 +2,12 @@ import { Controller, Post, Get, Body, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { TokenBalanceService } from './token-balance.service';
 import { CreateTokenBalanceDto } from './dto/create-token-balance.dto';
+import { SubtractTokensDto } from './dto/subtract-tokens.dto';
 
 @ApiTags('TokenBalance')
 @Controller('token-balances')
 export class TokenBalanceController {
-  constructor(private readonly service: TokenBalanceService) {}
+  constructor(private readonly service: TokenBalanceService) { }
 
   @Post()
   @ApiOperation({ summary: 'Создать баланс токенов' })
@@ -19,6 +20,15 @@ export class TokenBalanceController {
   @ApiOperation({ summary: 'Все балансы (admin)' })
   findAll() {
     return this.service.findAll();
+  }
+
+  @Post('subtract')
+  @ApiOperation({ summary: 'Списать токены с баланса пользователя' })
+  @ApiResponse({ status: 200, description: 'Токены успешно списаны' })
+  @ApiResponse({ status: 400, description: 'Недостаточно средств' })
+  @ApiResponse({ status: 404, description: 'Баланс не найден' })
+  async subtract(@Body() dto: SubtractTokensDto) {
+    return this.service.subtractTokens(dto.userId, dto.tokens, dto.reason);
   }
 
   @Get('by-user')

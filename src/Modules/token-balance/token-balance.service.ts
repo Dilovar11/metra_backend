@@ -5,6 +5,7 @@ import { TokenBalance } from '../../Entities/token-balance.entity';
 import { User } from '../../Entities/user.entity';
 import { CreateTokenBalanceDto } from './dto/create-token-balance.dto';
 import { ReferralBalance } from '../../Entities/referral-balance.entity';
+import { TokenTransaction } from '../../Entities/token-transaction.entity';
 
 @Injectable()
 export class TokenBalanceService {
@@ -15,12 +16,14 @@ export class TokenBalanceService {
     @InjectRepository(User)
     private userRepo: Repository<User>,
 
-    @InjectRepository(ReferralBalance) // Индекс [2]
+    @InjectRepository(ReferralBalance) 
     private refRepo: Repository<ReferralBalance>,
+
+    @InjectRepository(TokenTransaction) private transactionRepo: Repository<TokenTransaction>,
   ) { }
 
-  async addTokens(userId: string, tokens: number) {
 
+  async addTokens(userId: string, tokens: number, reason: string = 'Пополнение токена') {
     let tokenBalance = await this.balanceRepo.findOne({
       where: { user: { id: userId } },
     });
@@ -34,10 +37,18 @@ export class TokenBalanceService {
         balance: tokens,
       });
     } else {
-
       tokenBalance.balance = Number(tokenBalance.balance) + tokens;
     }
-    return this.balanceRepo.save(tokenBalance);
+
+    const savedBalance = await this.balanceRepo.save(tokenBalance);
+
+    await this.transactionRepo.save({
+      user: { id: userId },
+      amount: tokens,
+      reason: reason,
+    });
+
+    return savedBalance;
   }
 
 
@@ -56,6 +67,33 @@ export class TokenBalanceService {
     }
 
     return this.refRepo.save(balance);
+  }
+
+
+  async subtractTokens(userId: string, tokens: number, reason: string = 'Списание токенов') {
+    const tokenBalance = await this.balanceRepo.findOne({
+      where: { user: { id: userId } },
+    });
+
+    if (!tokenBalance) {
+      throw new NotFoundException('Баланс не найден');
+    }
+
+    const currentBalance = Number(tokenBalance.balance);
+    if (currentBalance < tokens) {
+      throw new BadRequestException('Недостаточно токенов');
+    }
+
+    tokenBalance.balance = currentBalance - tokens;
+    const savedBalance = await this.balanceRepo.save(tokenBalance);
+
+    await this.transactionRepo.save({
+      user: { id: userId },
+      amount: -tokens,
+      reason: reason,
+    });
+
+    return savedBalance;
   }
 
   async create(dto: CreateTokenBalanceDto) {
