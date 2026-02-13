@@ -1,8 +1,8 @@
 import { Controller, Post, Get, Body, Query, HttpCode, Req, HttpStatus, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery, ApiExcludeEndpoint } from '@nestjs/swagger';
-import { TokenTransactionService } from './token-transaction.service';
+import { TokenTransactionService } from './payment-transaction.service';
 
-@ApiTags('TokenTransactions')
+@ApiTags('PaymentTransactions')
 @Controller('token-transactions')
 export class TokenTransactionController {
   constructor(private readonly service: TokenTransactionService) { }

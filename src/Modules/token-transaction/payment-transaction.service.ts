@@ -4,11 +4,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Any, DataSource, Double, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { TokenTransaction } from '../../Entities/token-transaction.entity';
 import { TokenBalance } from '../../Entities/token-balance.entity';
 import { User } from '../../Entities/user.entity';
-import { CreateTokenTransactionDto } from './dto/create-token-transaction.dto';
 import { PaymentTransaction } from '../../Entities/payment-transaction';
 import { TokenBalanceService } from '../token-balance/token-balance.service';
 import { v4 as uuidv4 } from 'uuid'; // для ключа идемпотентности

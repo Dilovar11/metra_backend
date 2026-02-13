@@ -45,7 +45,7 @@ export class GenerationService {
     const videoTypes = [GenerationType.PHOTO_ANIMATION, GenerationType.LIP_SYNC];
 
     const findOptions: any = {
-      relations: ['user', 'media'],
+      relations: ['user'],
       order: { createdAt: 'DESC' },
       where: {
         user: { id: userId }
@@ -74,8 +74,7 @@ export class GenerationService {
     }
 
     return this.generationRepo.find({
-      where: whereOptions,
-      relations: ['media'],
+      where: whereOptions
     });
   }
 

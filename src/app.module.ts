@@ -7,7 +7,7 @@ import { ReferralModule } from './Modules/referral/referral.module';
 import { SubscriptionModule } from './Modules/subscription/subscription.module';
 import { SupportTicketModule } from './Modules/support-ticket/support-ticket.module';
 import { TokenBalanceModule } from './Modules/token-balance/token-balance.module';
-import { TokenTransactionModule } from './Modules/token-transaction/token-transaction.module';
+import { TokenTransactionModule } from './Modules/token-transaction/payment-transaction.module';
 import { AvatarGeneratorModule } from './NanoBanana-API/avatar/generate-avatar.module';
 import { ImageGeneratorModule } from './NanoBanana-API/generation-image/image-generator.module';
 import { FilesModule } from './Modules/file/file.module';
