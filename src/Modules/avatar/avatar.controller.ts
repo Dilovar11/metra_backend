@@ -4,7 +4,7 @@ import { AvatarService } from './avatar.service';
 import { Avatar } from '../../Entities/avatar.entity';
 import { CreateAvatarDto } from './dto/create-avatar.dto';
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
-import { TgUser } from 'src/Common/decorators/user.decorator'; 
+import { TgUser } from '../../Common/decorators/user.decorator'; 
 
 @ApiTags('Avatars')
 @Controller('avatars')

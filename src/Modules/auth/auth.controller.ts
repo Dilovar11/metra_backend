@@ -2,7 +2,7 @@ import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { Public } from 'src/Common/decorators/public.decorator';
+import { Public } from '../../Common/decorators/public.decorator';
 
 @Public()
 @ApiTags('Авторизация')
