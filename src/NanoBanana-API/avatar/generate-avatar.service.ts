@@ -17,7 +17,7 @@ export class AvatarGeneratorService {
                 const successImageUrl3 = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTymEBwTy4adePMBn4Zln-smukrUFsI8FyDnA&s';
                 const successImageUrl4 = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRP9Sbu9iUE6UPNtmd9E6L8AZSX2Vo6hmkI4w&s';
 
-                console.log('--- Mock Generation Finished Successfully ---');
+                console.log('--- Mock Generation Finished Successfully --');
                 
                 return {
                     name: dto.name,
