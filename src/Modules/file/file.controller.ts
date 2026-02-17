@@ -17,7 +17,7 @@ import { TgUser } from 'src/Common/decorators/user.decorator';
 @Controller('files')
 export class FilesController {
   constructor(private readonly filesService: FilesService) { }
-
+  
   @Post('avatar') // Убрали /:userId
   @ApiOperation({ summary: 'Сохранение файлов фото пользователя для генерации аватаров' })
   @ApiConsumes('multipart/form-data')

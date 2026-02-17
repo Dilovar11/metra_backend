@@ -18,7 +18,7 @@ export class TelegramGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     // Получаем заголовок, который отправляет наш Angular интерцептор
-    const initData = request.headers['X-Telegram-Init-Data'];
+    const initData = request.headers['x-telegram-init-data'];
 
     if (!initData) {
       throw new UnauthorizedException('Telegram data not found in headers');
