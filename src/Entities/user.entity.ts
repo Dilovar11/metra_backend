@@ -1,10 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import { Entity, Column, CreateDateColumn, ManyToOne, OneToMany, JoinColumn, PrimaryColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity('users')
 export class User {
-  @ApiProperty({ example: 'uuid', description: 'ID пользователя' })
-  @PrimaryGeneratedColumn('uuid')
+  @ApiProperty({ example: '123456789', description: 'ID пользователя' })
+  @PrimaryColumn({ type: 'bigint' })
   id: string;
 
   @ApiProperty({ example: '123456789', description: 'Telegram ID пользователя' })

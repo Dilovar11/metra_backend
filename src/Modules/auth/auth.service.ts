@@ -21,6 +21,7 @@ export class AuthService {
 
     // 2. Создаем нового пользователя
     const newUser = this.userRepo.create({
+      id: dto.telegramId,
       telegramId: dto.telegramId,
       username: dto.username,
       firstName: dto.firstName,
