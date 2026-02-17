@@ -14,6 +14,8 @@ import { FilesModule } from './Modules/file/file.module';
 import { CorrectionImageModule } from './NanoBanana-API/correction-image/correction-image.module';
 import { AuthModule } from './Modules/auth/auth.module';
 import { SceneModule } from './Modules/scene/scene.module';
+import { APP_GUARD } from '@nestjs/core';
+import { TelegramGuard } from './Modules/auth/telegram.guard';
 
 @Module({
   imports: [
@@ -35,7 +37,7 @@ import { SceneModule } from './Modules/scene/scene.module';
 
       extra: {
         max: 5,
-        connectionTimeoutMillis: 5000, 
+        connectionTimeoutMillis: 5000,
       },
     }),
     AuthModule,
@@ -52,6 +54,12 @@ import { SceneModule } from './Modules/scene/scene.module';
     TokenTransactionModule,
     SubscriptionModule,
     SupportTicketModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: TelegramGuard, 
+    },
   ],
 })
 export class AppModule { }

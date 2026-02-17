@@ -16,17 +16,17 @@ export class AvatarService {
     private userRepository: Repository<User>,
   ) { }
 
-  async create(dto: CreateAvatarDto): Promise<Avatar> {
+  async create(userId: string, dto: CreateAvatarDto): Promise<Avatar> {
     const user = await this.userRepository.findOne({
-      where: { id: dto.userId },
+      where: { id: userId },
     });
 
     if (!user) {
-      throw new NotFoundException(`User with ID ${dto.userId} not found`);
+      throw new NotFoundException(`User with ID ${userId} not found`);
     }
 
     await this.avatarRepository.delete({
-      user: { id: dto.userId },
+      user: { id: userId },
     });
 
     const avatar = this.avatarRepository.create({

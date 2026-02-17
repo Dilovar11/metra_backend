@@ -4,6 +4,7 @@ import { AvatarService } from './avatar.service';
 import { Avatar } from '../../Entities/avatar.entity';
 import { CreateAvatarDto } from './dto/create-avatar.dto';
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
+import { TgUser } from 'src/Common/decorators/user.decorator'; 
 
 @ApiTags('Avatars')
 @Controller('avatars')
@@ -14,30 +15,40 @@ export class AvatarController {
   @ApiOperation({ summary: 'Сохранить генерированных аватаров' })
   @ApiBody({ type: CreateAvatarDto })
   @ApiResponse({ status: 201, description: 'Аватар(ы) сохранен(ы)', type: Avatar })
-  create(@Body() dto: CreateAvatarDto): Promise<Avatar> {
-    return this.avatarService.create(dto);
+  create(
+    @TgUser('id') userId: number, 
+    @Body() dto: CreateAvatarDto
+  ): Promise<Avatar> {
+    return this.avatarService.create(userId.toString(), dto);
   }
 
-  @Get()
-  @ApiOperation({ summary: 'Получить все аватары' })
+  @Get('my') 
+  @ApiOperation({ summary: 'Получить свои аватары' })
+  @ApiResponse({ status: 200, type: Avatar })
+  findMyAvatars(@TgUser('id') userId: number): Promise<Avatar | null> {
+    return this.avatarService.findByUser(userId.toString());
+  }
+
+  @Patch('add')
+  @ApiOperation({ summary: 'Добавить URL изображения к своему аватару' })
+  async addImage(
+    @TgUser('id') userId: number,
+    @Body('url') url: string
+  ) {
+    return await this.avatarService.addImgUrl(userId.toString(), url);
+  }
+
+  @Get() 
+  @ApiOperation({ summary: 'Получить вообще все аватары в системе' })
   @ApiResponse({ status: 200, type: [Avatar] })
   findAll(): Promise<Avatar[]> {
     return this.avatarService.findAll();
   }
 
-  @Get('user/:userId')
-  @ApiOperation({ summary: 'Получить аватар по User ID' })
-  @ApiParam({ name: 'userId', description: 'ID пользователя' })
-  @ApiResponse({ status: 200, type: Avatar })
-  findByUser(@Param('userId') userId: string): Promise<Avatar | null> {
-    return this.avatarService.findByUser(userId);
-  }
-
   @Put(':id')
-  @ApiOperation({ summary: 'Обновить аватар' })
+  @ApiOperation({ summary: 'Обновить конкретный аватар по его внутреннему ID' })
   @ApiParam({ name: 'id', description: 'ID аватара' })
   @ApiBody({ type: UpdateAvatarDto })
-  @ApiResponse({ status: 200, type: Avatar })
   update(
     @Param('id') id: string,
     @Body() dto: UpdateAvatarDto,
@@ -45,18 +56,9 @@ export class AvatarController {
     return this.avatarService.update(id, dto);
   }
 
-  @Patch('add/:userId')
-  async addImage(
-    @Param('userId') userId: string,
-    @Body('url') url: string
-  ) {
-    return await this.avatarService.addImgUrl(userId, url);
-  }
-
   @Delete(':id')
   @ApiOperation({ summary: 'Удалить аватар' })
   @ApiParam({ name: 'id', description: 'ID аватара' })
-  @ApiResponse({ status: 200, description: 'Аватар удалён' })
   remove(@Param('id') id: string): Promise<void> {
     return this.avatarService.remove(id);
   }
