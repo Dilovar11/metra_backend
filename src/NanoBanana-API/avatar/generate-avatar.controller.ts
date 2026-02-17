@@ -12,7 +12,7 @@ export class AvatarGeneratorController {
   @Post('generate-avatar')
   @ApiOperation({
     summary: 'Генерация новых вариантов аватара на основе существующих изображений',
-    description: 'Использует предоставленные изображения для создания новых аватаров.'
+    description: 'Использует предоставленные изображения для создания новых аватаров'
   })
   @ApiBody({ type: GenerateAvatarDto })
   @ApiResponse({
