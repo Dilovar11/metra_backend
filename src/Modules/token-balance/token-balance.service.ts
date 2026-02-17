@@ -96,8 +96,8 @@ export class TokenBalanceService {
     return savedBalance;
   }
 
-  async create(dto: CreateTokenBalanceDto) {
-    const user = await this.userRepo.findOne({ where: { id: dto.userId } });
+  async create(dto: CreateTokenBalanceDto, userId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
     const exists = await this.balanceRepo.findOne({

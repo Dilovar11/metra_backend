@@ -8,9 +8,6 @@ export enum SubscriptionPlan {
 }
 
 export class CreateSubscriptionDto {
-  @ApiProperty({ example: 'user-uuid', description: 'ID пользователя' })
-  @IsString()
-  userId: string;
 
   @ApiProperty({ 
     example: SubscriptionPlan.PRO, 

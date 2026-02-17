@@ -16,8 +16,8 @@ export class SubscriptionService {
     private userRepo: Repository<User>,
   ) {}
 
-  async create(dto: CreateSubscriptionDto) {
-    const user = await this.userRepo.findOne({ where: { id: dto.userId } });
+  async create(userId: string, dto: CreateSubscriptionDto) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
     // отключаем активные подписки

@@ -1,6 +1,7 @@
-import { Controller, Post, Get, Body, Query, HttpCode, Req, HttpStatus, BadRequestException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery, ApiExcludeEndpoint } from '@nestjs/swagger';
+import { Controller, Post, Get, Body, Query, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { TokenTransactionService } from './payment-transaction.service';
+import { TgUser } from '../../Common/decorators/user.decorator'; 
 
 @ApiTags('PaymentTransactions')
 @Controller('token-transactions')
@@ -10,7 +11,6 @@ export class TokenTransactionController {
   @Post('create-order')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Создать платеж в ЮKassa и получить ссылку на оплату' })
-  @ApiQuery({ name: 'userId', required: true, description: 'ID пользователя' })
   @ApiQuery({
     name: 'tokensAmount',
     required: true,
@@ -19,21 +19,18 @@ export class TokenTransactionController {
   })
   @ApiResponse({ status: 201, description: 'Возвращает URL для редиректа на оплату' })
   async createOrder(
-    @Query('userId') userId: string,
+    @TgUser('id') userId: string, 
     @Query('tokensAmount') tokensAmount: string
   ) {
-    if (!userId || !tokensAmount) {
-      throw new BadRequestException('userId и tokensAmount обязательны');
+    if (!tokensAmount) {
+      throw new BadRequestException('tokensAmount обязателен');
     }
-
-    // Преобразуем tokensAmount в число, так как из Query всё приходит строкой
     return this.service.createAcquiringOrder(userId, Number(tokensAmount));
   }
 
   @Post('create-subscription-order')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Создать платеж по подписке (subscription)' })
-  @ApiQuery({ name: 'userId', required: true, description: 'ID пользователя' })
   @ApiQuery({
     name: 'amount',
     required: true,
@@ -42,28 +39,26 @@ export class TokenTransactionController {
   })
   @ApiResponse({ status: 201, description: 'Возвращает URL для оплаты' })
   async createCustomOrder(
-    @Query('userId') userId: string,
+    @TgUser('id') userId: string,
     @Query('amount') amount: string
   ) {
-    if (!userId || !amount) {
-      throw new BadRequestException('userId и amount обязательны');
+    if (!amount) {
+      throw new BadRequestException('amount обязателен');
     }
     return this.service.createSubscribAcquiringOrder(userId, Number(amount));
   }
 
+  @Get('user-transactions')
+  @ApiOperation({ summary: 'Получить историю транзакций текущего пользователя' })
+  async getHistory(@TgUser('id') userId: string) {
+    return this.service.findByUser(userId);
+  }
 
   @Post('webhook/yookassa')
   @HttpCode(HttpStatus.OK)
-  @ApiExcludeEndpoint()
+  @ApiExcludeEndpoint() 
   async handleYookassaWebhook(@Body() data: any) {
     return this.service.handleWebhook(data);
-  }
-
-  @Get('user-transactions')
-  @ApiOperation({ summary: 'Получить историю транзакций пользователя' })
-  @ApiQuery({ name: 'userId', required: true })
-  async getHistory(@Query('userId') userId: string) {
-    return this.service.findByUser(userId);
   }
 
   @Get('all')

@@ -3,7 +3,9 @@ import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { SceneCategoryService } from './scene-category.service';
 import { CreateSceneCategoryDto } from './dto/create-scene-category.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Public } from '../../Common/decorators/public.decorator';
 
+@Public()
 @ApiTags('Scene Categories (Категории сцен)')
 @Controller('scene-categories')
 export class SceneCategoryController {

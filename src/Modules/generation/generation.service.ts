@@ -15,8 +15,8 @@ export class GenerationService {
     private userRepo: Repository<User>,
   ) { }
 
-  async create(dto: CreateGenerationDto) {
-    const user = await this.userRepo.findOne({ where: { id: dto.userId } });
+  async create(userId: string, dto: CreateGenerationDto) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
     const generation = this.generationRepo.create({

@@ -1,8 +1,9 @@
-import { Controller, Post, Get, Patch, Param, Body, Query, Req } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { GenerationService } from './generation.service';
 import { CreateGenerationDto } from './dto/create-generation.dto';
 import { GenerationType } from 'src/Entities/generation.entity';
+import { TgUser } from '../../Common/decorators/user.decorator';
 
 @ApiTags('Generations')
 @Controller('generations')
@@ -12,16 +13,18 @@ export class GenerationController {
   @Post()
   @ApiOperation({ summary: 'Сохранить генерацию' })
   @ApiResponse({ status: 201 })
-  create(@Body() dto: CreateGenerationDto) {
-    return this.service.create(dto);
+  async create(
+    @TgUser('id') userId: string, 
+    @Body() dto: CreateGenerationDto
+  ) {
+    return this.service.create(userId, dto);
   }
 
   @Get('by-user')
-  @ApiOperation({ summary: 'Генерации пользователя по ID' })
-  @ApiQuery({ name: 'userId', required: true, description: 'Введите ID пользователя' }) 
+  @ApiOperation({ summary: 'Генерации текущего пользователя' })
   @ApiQuery({ name: 'filter', required: false, enum: ['all', 'photo', 'video'] })
-  findAll(
-    @Query('userId') userId: string, 
+  async findAll(
+    @TgUser('id') userId: string, 
     @Query('filter') filter: 'all' | 'photo' | 'video' = 'all'
   ) {
     return this.service.findAll(userId, filter);
@@ -29,8 +32,8 @@ export class GenerationController {
 
   @Get('by-category')
   @ApiOperation({ summary: 'Генерации пользователя по категории' })
-  findByUser(
-    @Query('userId') userId: string,
+  async findByCategory(
+    @TgUser('id') userId: string,
     @Query('type') type?: GenerationType
   ) {
     return this.service.findByUserAndType(userId, type);

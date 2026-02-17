@@ -3,7 +3,9 @@ import { UsersService } from './users.service';
 import { User } from '../../Entities/user.entity';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { CreateUserDto } from './dto/create.dto';
+import { Public } from '../../Common/decorators/public.decorator';
 
+@Public()
 @ApiTags('Users')
 @Controller('users')
 export class UsersController {

@@ -4,7 +4,9 @@ import { SceneService } from './scene.service';
 import { CreateSceneDto } from './dto/create-scene.dto';
 import { SceneMode } from '../../Entities/scene.entity';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Public } from '../../Common/decorators/public.decorator';
 
+@Public()
 @ApiTags('Scenes (Сцены)')
 @Controller('scenes')
 export class SceneController {
