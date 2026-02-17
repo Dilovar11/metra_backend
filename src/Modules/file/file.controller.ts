@@ -1,4 +1,3 @@
-// file.controller.ts
 import {
   Controller,
   Post,
@@ -11,17 +10,17 @@ import {
 import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { FilesService } from './file.service';
-import { ApiTags, ApiConsumes, ApiBody, ApiParam, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiConsumes, ApiBody, ApiOperation } from '@nestjs/swagger';
+import { TgUser } from 'src/Common/decorators/user.decorator';
 
 @ApiTags('Загрузка файлов (images) на сервере cloudinary')
 @Controller('files')
 export class FilesController {
   constructor(private readonly filesService: FilesService) { }
 
-  @Post('avatar/:userId')
+  @Post('avatar') // Убрали /:userId
   @ApiOperation({ summary: 'Сохранение файлов фото пользователя для генерации аватаров' })
   @ApiConsumes('multipart/form-data')
-  @ApiParam({ name: 'userId', description: 'ID пользователя для создания папки и именования файлов' })
   @ApiBody({
     schema: {
       type: 'object',
@@ -46,32 +45,17 @@ export class FilesController {
   )
   async uploadFileAvatar(
     @UploadedFiles() files: Array<Express.Multer.File>,
-    @Param('userId') userId: string
+    @TgUser('id') userId: number // Берем проверенный ID здесь!
   ) {
     if (!files || files.length === 0) {
       throw new BadRequestException('No files uploaded');
     }
-    return await this.filesService.saveFileAvatar(files, userId);
+    return await this.filesService.saveFileAvatar(files, userId.toString());
   }
 
-
-
-
-  @Post('generated-avatar/:userId')
+  @Post('generated-avatar') // Убрали /:userId
   @ApiOperation({ summary: 'Сохранение файлов выбранных аватаров' })
   @ApiConsumes('multipart/form-data')
-  @ApiParam({ name: 'userId', description: 'ID пользователя для создания папки и именования файлов' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        files: {
-          type: 'array',
-          items: { type: 'string', format: 'binary' },
-        },
-      },
-    },
-  })
   @UseInterceptors(
     FilesInterceptor('files', 10, {
       storage: memoryStorage(),
@@ -85,29 +69,17 @@ export class FilesController {
   )
   async uploadFileGeneratedAvatar(
     @UploadedFiles() files: Array<Express.Multer.File>,
-    @Param('userId') userId: string
+    @TgUser('id') userId: number
   ) {
     if (!files || files.length === 0) {
       throw new BadRequestException('No files uploaded');
     }
-    return await this.filesService.saveFileGeneratedAvatars(files, userId);
+    return await this.filesService.saveFileGeneratedAvatars(files, userId.toString());
   }
 
-
-
-  @Post('generated-avatar/:userId/:index')
+  @Post('generated-avatar/:index') // Оставили только index
   @ApiOperation({ summary: 'Сохранение файла выбранного аватара под конкретным индексом' })
   @ApiConsumes('multipart/form-data')
-  @ApiParam({ name: 'userId', description: 'ID пользователя' })
-  @ApiParam({ name: 'index', description: 'Индекс фото (0, 1, 2...)' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        file: { type: 'string', format: 'binary' },
-      },
-    },
-  })
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
@@ -121,7 +93,7 @@ export class FilesController {
   )
   async uploadSingleFileByIndex(
     @UploadedFile() file: Express.Multer.File,
-    @Param('userId') userId: string,
+    @TgUser('id') userId: number,
     @Param('index') index: string
   ) {
     if (!file) {
@@ -132,28 +104,12 @@ export class FilesController {
       throw new BadRequestException('Index must be a number');
     }
 
-    return await this.filesService.saveFileGeneratedAvatarByIndex(file, userId, numericIndex);
+    return await this.filesService.saveFileGeneratedAvatarByIndex(file, userId.toString(), numericIndex);
   }
 
-
-
-
-
-  @Post('save-for-generation/:userId')
-  @ApiOperation({ summary: 'Сохранение файла (изображение) пользователя для генерации' })
+  @Post('save-for-generation') // Убрали /:userId
+  @ApiOperation({ summary: 'Сохранение изображения пользователя для генерации' })
   @ApiConsumes('multipart/form-data')
-  @ApiParam({ name: 'userId', description: 'ID пользователя для создания папки и именования файла' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        file: { 
-          type: 'string',
-          format: 'binary',
-        },
-      },
-    },
-  })
   @UseInterceptors(
     FileInterceptor('file', { 
       storage: memoryStorage(),
@@ -167,47 +123,11 @@ export class FilesController {
   )
   async uploadFileForGeneration(
     @UploadedFile() file: Express.Multer.File,
-    @Param('userId') userId: string
+    @TgUser('id') userId: number
   ) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
-    return await this.filesService.saveFileImage(file, userId);
-  }
-
-
-
-
-
-  @Post('save-generated/:userId')
-  @ApiOperation({ summary: 'Загрузка сгенерированного изображения' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        file: { type: 'string', format: 'binary' },
-      },
-    },
-  })
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: memoryStorage(),
-      fileFilter: (req, file, callback) => {
-        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
-          return callback(new BadRequestException('Разрешены только изображения!'), false);
-        }
-        callback(null, true);
-      },
-    }),
-  )
-  async uploadGenerated(
-    @UploadedFile() file: Express.Multer.File,
-    @Param('userId') userId: string
-  ) {
-    if (!file) {
-      throw new BadRequestException('Файл не был загружен');
-    }
-    return await this.filesService.saveGeneratedImage(file, userId);
+    return await this.filesService.saveFileImage(file, userId.toString());
   }
 }
