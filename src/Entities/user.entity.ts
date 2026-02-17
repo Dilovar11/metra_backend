@@ -4,11 +4,11 @@ import { ApiProperty } from '@nestjs/swagger';
 @Entity('users')
 export class User {
   @ApiProperty({ example: '123456789', description: 'ID пользователя' })
-  @PrimaryColumn({ unique: true })
+  @PrimaryColumn()
   id: string;
 
   @ApiProperty({ example: '123456789', description: 'Telegram ID пользователя' })
-  @Column({ unique: true })
+  @Column()
   telegramId: string;
 
   @ApiProperty({ example: 'johndoe', required: false })
