@@ -1,17 +1,17 @@
 import { Controller, Post, Get, Body, Query, HttpCode, HttpStatus, BadRequestException, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { TokenTransactionService } from './payment-transaction.service';
-import { TgUser } from '../../Common/decorators/user.decorator'; 
+import { TgUser } from '../../Common/decorators/user.decorator';
 import { TelegramGuard } from '../auth/telegram.guard';
 
 
 
 @ApiTags('PaymentTransactions')
 @Controller('token-transactions')
-@UseGuards(TelegramGuard)
 export class TokenTransactionController {
   constructor(private readonly service: TokenTransactionService) { }
 
+  @UseGuards(TelegramGuard)
   @Post('create-order')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Создать платеж в ЮKassa и получить ссылку на оплату' })
@@ -23,7 +23,7 @@ export class TokenTransactionController {
   })
   @ApiResponse({ status: 201, description: 'Возвращает URL для редиректа на оплату' })
   async createOrder(
-    @TgUser('id') userId: string, 
+    @TgUser('id') userId: string,
     @Query('tokensAmount') tokensAmount: string
   ) {
     if (!tokensAmount) {
@@ -32,6 +32,7 @@ export class TokenTransactionController {
     return this.service.createAcquiringOrder(userId, Number(tokensAmount));
   }
 
+  @UseGuards(TelegramGuard)
   @Post('create-subscription-order')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Создать платеж по подписке (subscription)' })
@@ -52,6 +53,7 @@ export class TokenTransactionController {
     return this.service.createSubscribAcquiringOrder(userId, Number(amount));
   }
 
+  @UseGuards(TelegramGuard)
   @Get('user-transactions')
   @ApiOperation({ summary: 'Получить историю транзакций текущего пользователя' })
   async getHistory(@TgUser('id') userId: string) {
@@ -60,7 +62,7 @@ export class TokenTransactionController {
 
   @Post('webhook/yookassa')
   @HttpCode(HttpStatus.OK)
-  @ApiExcludeEndpoint() 
+  @ApiExcludeEndpoint()
   async handleYookassaWebhook(@Body() data: any) {
     return this.service.handleWebhook(data);
   }
