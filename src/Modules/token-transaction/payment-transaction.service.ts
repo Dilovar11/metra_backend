@@ -5,13 +5,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { TokenTransaction } from '../../Entities/token-transaction.entity';
-import { TokenBalance } from '../../Entities/token-balance.entity';
 import { User } from '../../Entities/user.entity';
 import { PaymentTransaction } from '../../Entities/payment-transaction';
 import { TokenBalanceService } from '../token-balance/token-balance.service';
-import { v4 as uuidv4 } from 'uuid'; // для ключа идемпотентности
+import { v4 as uuidv4 } from 'uuid'; 
 import axios from 'axios';
+import { Referral } from '../../Entities/referral.entity';
 
 @Injectable()
 export class TokenTransactionService {
@@ -20,16 +19,14 @@ export class TokenTransactionService {
   private readonly SECRET_KEY = 'test_ZuHKwKoGiARiU9TNoKNpQ2R5BmTCQ3vyYRZ5wZvvSnU';
   constructor(
 
-
     @InjectRepository(PaymentTransaction) private transactionRepo: Repository<PaymentTransaction>,
 
-    @InjectRepository(TokenTransaction)
-    private txRepo: Repository<TokenTransaction>,
+    @InjectRepository(Referral) private referralRepo: Repository<Referral>,
 
-    private tokenBalanceService: TokenBalanceService,
+    @InjectRepository(User) private userRepo: Repository<User>,
 
-    @InjectRepository(User)
-    private userRepo: Repository<User>,
+    private tokenBalanceService: TokenBalanceService
+
   ) {
   }
 
@@ -196,7 +193,7 @@ export class TokenTransactionService {
 
 
   async handleWebhook(data: any) {
-    // 1. Проверяем событие. ЮKassa присылает уведомление только на определенные статусы.
+    // 1. Проверяем событие (ЮKassa присылает уведомление при успешной оплате)
     if (data.event !== 'payment.succeeded') {
       console.log(`[Webhook] Пропускаем событие: ${data.event}`);
       return;
@@ -210,9 +207,10 @@ export class TokenTransactionService {
       return;
     }
 
+    // Находим транзакцию
     const transaction = await this.transactionRepo.findOne({
       where: { id: orderId },
-      relations: ['user', 'inviter']
+      relations: ['user'] // Подгружаем пользователя, совершившего покупку
     });
 
     if (!transaction) {
@@ -220,31 +218,45 @@ export class TokenTransactionService {
       return;
     }
 
-    // Защита от повторной обработки (Idempotency на стороне БД)
+    // Защита от повторной обработки
     if (transaction.status !== 'PENDING') {
-      console.log(`[Webhook] Транзакция ${orderId} уже имеет статус ${transaction.status}`);
+      console.log(`[Webhook] Транзакция ${orderId} уже обработана (статус: ${transaction.status})`);
       return;
     }
 
     try {
+      // 2. ИЩЕМ ПРИГЛАСИВШЕГО (Интеграция логики processPayment)
+      // Мы проверяем, есть ли у текущего покупателя пригласитель (inviter)
+      const referralRelation = await this.referralRepo.findOne({
+        where: { invited: { id: transaction.user.id } },
+        relations: ['inviter']
+      });
+
+      if (referralRelation) {
+        // Считаем 25% бонуса от суммы транзакции
+        const bonus = Number(transaction.amount) * 0.25;
+        transaction.inviter = referralRelation.inviter;
+        transaction.referralBonus = bonus;
+
+        console.log(`[Webhook] Реферальная связь найдена. Инвайтер: ${transaction.inviter.id}, Бонус: ${bonus}`);
+      }
+
       // 3. Обновляем статус транзакции
       transaction.status = 'SUCCESS';
-      // Сохраняем ID платежа от ЮKassa, если вдруг он не сохранился при создании
-      transaction.externalId = payment.id;
+      transaction.externalId = payment.id; // ID платежа в системе ЮKassa
       await this.transactionRepo.save(transaction);
 
-      // 4. Логика начисления токенов
+      // 4. Начисление токенов покупателю
       const purchasedTokens = transaction.tokens;
-
       if (purchasedTokens > 0) {
         await this.tokenBalanceService.addTokens(transaction.user.id, purchasedTokens);
         console.log(`[Webhook] Начислено ${purchasedTokens} токенов пользователю ${transaction.user.id}`);
       }
 
-      // 5. Начисляем бонус пригласившему
+      // 5. Начисление бонуса пригласившему (если он есть)
       if (transaction.inviter && transaction.referralBonus > 0) {
         await this.tokenBalanceService.addBonus(transaction.inviter.id, transaction.referralBonus);
-        console.log(`[Webhook] Начислен бонус ${transaction.referralBonus} пригласившему ${transaction.inviter.id}`);
+        console.log(`[Webhook] Бонус ${transaction.referralBonus} руб. начислен пригласившему ${transaction.inviter.id}`);
       }
 
     } catch (error) {

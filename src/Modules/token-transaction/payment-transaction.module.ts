@@ -7,10 +7,11 @@ import { TokenTransactionService } from './payment-transaction.service';
 import { TokenTransactionController } from './payment-transaction.controller';
 import { PaymentTransaction } from '../../Entities/payment-transaction';
 import { TokenBalanceModule } from '../token-balance/token-balance.module';
+import { Referral } from '../../Entities/referral.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TokenTransaction, User, PaymentTransaction]),
+    TypeOrmModule.forFeature([TokenTransaction, User, PaymentTransaction, Referral]),
     TokenBalanceModule
   ],
   providers: [TokenTransactionService],
