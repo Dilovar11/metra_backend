@@ -15,7 +15,10 @@ async function bootstrap() {
       new ExpressAdapter(expressApp)
     );
 
-    app.enableCors();
+    app.enableCors({
+      origin: '*', 
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    });
 
     // Настройка Swagger
     const config = new DocumentBuilder()
