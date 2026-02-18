@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiExcludeEndpoint } from
 import { TokenTransactionService } from './payment-transaction.service';
 import { TgUser } from '../../Common/decorators/user.decorator';
 import { TelegramGuard } from '../auth/telegram.guard';
+import { Public } from 'src/Common/decorators/public.decorator';
 
 
 
@@ -60,6 +61,7 @@ export class TokenTransactionController {
     return this.service.findByUser(userId);
   }
 
+  @Public()
   @Post('webhook/yookassa')
   @HttpCode(HttpStatus.OK)
   @ApiExcludeEndpoint()
