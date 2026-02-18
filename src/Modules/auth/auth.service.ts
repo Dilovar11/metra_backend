@@ -28,19 +28,19 @@ export class AuthService {
       lastName: dto.lastName
     });
     const savedUser = await this.userRepo.save(newUser);
-    
+
     try {
+      if (dto.refCode) {
+        await this.referralService.trackClick(dto.refCode, savedUser.telegramId);
+
+        await this.linkReferral(savedUser, dto.refCode);
+      }
       await this.referralService.getMyLink(savedUser.id);
-      console.log(`Referral code created for user ${savedUser.id}`);
+
+      console.log(`Registration flow completed for user ${savedUser.id}`);
     } catch (e) {
-      console.error(`Failed to create ref code for ${savedUser.id}`, e);
+      console.error(`Referral flow error for ${savedUser.id}:`, e.message);
     }
-
-    // 3. Если передан реферальный код — связываем
-    if (dto.refCode) {
-      await this.linkReferral(savedUser, dto.refCode);
-    }
-
     return savedUser;
   }
 

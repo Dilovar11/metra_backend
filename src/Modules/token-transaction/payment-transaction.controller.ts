@@ -1,11 +1,14 @@
-import { Controller, Post, Get, Body, Query, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, HttpCode, HttpStatus, BadRequestException, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { TokenTransactionService } from './payment-transaction.service';
 import { TgUser } from '../../Common/decorators/user.decorator'; 
-import { Public } from '../../Common/decorators/public.decorator';
+import { TelegramGuard } from '../auth/telegram.guard';
+
+
 
 @ApiTags('PaymentTransactions')
 @Controller('token-transactions')
+@UseGuards(TelegramGuard)
 export class TokenTransactionController {
   constructor(private readonly service: TokenTransactionService) { }
 
@@ -29,7 +32,6 @@ export class TokenTransactionController {
     return this.service.createAcquiringOrder(userId, Number(tokensAmount));
   }
 
-  @Public()
   @Post('create-subscription-order')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Создать платеж по подписке (subscription)' })
