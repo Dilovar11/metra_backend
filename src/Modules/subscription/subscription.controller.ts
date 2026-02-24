@@ -4,6 +4,7 @@ import { SubscriptionService } from './subscription.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { TgUser } from '../../Common/decorators/user.decorator';
+import { Public } from 'src/Common/decorators/public.decorator';
 
 @ApiTags('Subscriptions')
 @Controller('subscriptions')
@@ -20,6 +21,7 @@ export class SubscriptionController {
     return this.service.create(userId, dto);
   }
 
+  @Public()
   @Get('by-user')
   @ApiOperation({ summary: 'Получить активную подписку текущего пользователя' })
   async findByUser(@TgUser('id') userId: string) {
@@ -35,6 +37,7 @@ export class SubscriptionController {
     return this.service.deactivate(id);
   }
 
+  @Public()
   @Get()
   @ApiOperation({ summary: 'Все подписки (Admin)' })
   findAll() {
