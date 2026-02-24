@@ -14,6 +14,7 @@ export class SubscriptionService {
 
     @InjectRepository(User)
     private userRepo: Repository<User>,
+
   ) {}
 
   async create(userId: string, dto: CreateSubscriptionDto) {

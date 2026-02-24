@@ -5,6 +5,8 @@ import { Avatar } from '../../Entities/avatar.entity';
 import { User } from '../../Entities/user.entity';
 import { CreateAvatarDto } from './dto/create-avatar.dto';
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
+import { SubscriptionService } from '../subscription/subscription.service';
+import { SubscriptionPlan } from '../subscription/dto/create-subscription.dto';
 
 @Injectable()
 export class AvatarService {
@@ -14,20 +16,27 @@ export class AvatarService {
 
     @InjectRepository(User)
     private userRepository: Repository<User>,
+
+    private subscriptionService: SubscriptionService,
   ) { }
 
   async create(userId: string, dto: CreateAvatarDto): Promise<Avatar> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-    });
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException(`User with ID ${userId} not found`);
 
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
+    const existingAvatar = await this.avatarRepository.findOne({ where: { user: { id: userId } } });
+
+    if (!existingAvatar) {
+      const now = new Date();
+      const nextMonth = new Date();
+      nextMonth.setMonth(now.getMonth() + 1);
+
+      await this.subscriptionService.create(userId, {
+        plan: SubscriptionPlan.BASIC,
+        startsAt: now,
+        endsAt: nextMonth,
+      });
     }
-
-    await this.avatarRepository.delete({
-      user: { id: userId },
-    });
 
     const avatar = this.avatarRepository.create({
       user,
