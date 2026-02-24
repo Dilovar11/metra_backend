@@ -146,4 +146,18 @@ export class FilesService {
     }
   }
 
+
+  async deleteFromCloudinary(publicId: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      cloudinary.uploader.destroy(publicId, (error, result) => {
+        if (error) {
+          return reject(new Error(`Ошибка удаления из Cloudinary: ${error.message}`));
+        }
+        // Если файл не найден, Cloudinary вернет result: 'not found', 
+        // но это не считается ошибкой (error будет null)
+        resolve(result);
+      });
+    });
+  }
+
 }

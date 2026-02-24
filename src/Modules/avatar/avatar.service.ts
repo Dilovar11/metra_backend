@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Avatar } from '../../Entities/avatar.entity';
@@ -73,4 +73,24 @@ export class AvatarService {
   async remove(id: string): Promise<void> {
     await this.avatarRepository.delete(id);
   }
+
+  async changeActiveAvatar(userId: string, newActiveUrl: string): Promise<Avatar> {
+    const avatar = await this.avatarRepository.findOne({
+      where: { user: { id: userId } },
+    });
+
+    if (!avatar) {
+      throw new NotFoundException('Аватар для данного пользователя не найден');
+    }
+
+    const hasImage = avatar.imagesURL.includes(newActiveUrl);
+
+    if (!hasImage) {
+      throw new BadRequestException('Данное изображение не найдено в списке загруженных аватаров');
+    }
+
+    avatar.activeAvatar = newActiveUrl;
+    return await this.avatarRepository.save(avatar);
+  }
+
 }

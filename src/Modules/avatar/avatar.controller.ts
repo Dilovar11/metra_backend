@@ -4,7 +4,7 @@ import { AvatarService } from './avatar.service';
 import { Avatar } from '../../Entities/avatar.entity';
 import { CreateAvatarDto } from './dto/create-avatar.dto';
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
-import { TgUser } from '../../Common/decorators/user.decorator'; 
+import { TgUser } from '../../Common/decorators/user.decorator';
 
 @ApiTags('Avatars')
 @Controller('avatars')
@@ -16,13 +16,13 @@ export class AvatarController {
   @ApiBody({ type: CreateAvatarDto })
   @ApiResponse({ status: 201, description: 'Аватар(ы) сохранен(ы)', type: Avatar })
   create(
-    @TgUser('id') userId: number, 
+    @TgUser('id') userId: number,
     @Body() dto: CreateAvatarDto
   ): Promise<Avatar> {
     return this.avatarService.create(userId.toString(), dto);
   }
 
-  @Get('my') 
+  @Get('my')
   @ApiOperation({ summary: 'Получить свои аватары' })
   @ApiResponse({ status: 200, type: Avatar })
   findMyAvatars(@TgUser('id') userId: number): Promise<Avatar | null> {
@@ -38,7 +38,7 @@ export class AvatarController {
     return await this.avatarService.addImgUrl(userId.toString(), url);
   }
 
-  @Get() 
+  @Get()
   @ApiOperation({ summary: 'Получить вообще все аватары в системе' })
   @ApiResponse({ status: 200, type: [Avatar] })
   findAll(): Promise<Avatar[]> {
@@ -62,4 +62,23 @@ export class AvatarController {
   remove(@Param('id') id: string): Promise<void> {
     return this.avatarService.remove(id);
   }
+
+  @Patch('set-main')
+  @ApiOperation({ summary: 'Установить главное изображение аватара' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', example: 'https://storage.com/photo.jpg' }
+      }
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Главный аватар успешно изменен', type: Avatar })
+  async setMainAvatar(
+    @TgUser('id') userId: number,
+    @Body('url') url: string
+  ): Promise<Avatar> {
+    return await this.avatarService.changeActiveAvatar(userId.toString(), url);
+  }
+
 }
