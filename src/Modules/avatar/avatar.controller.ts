@@ -7,7 +7,7 @@ import { UpdateAvatarDto } from './dto/update-avatar.dto';
 import { TgUser } from '../../Common/decorators/user.decorator';
 import { Public } from '../../Common/decorators/public.decorator';
 
-@Public()
+
 @ApiTags('Avatars')
 @Controller('avatars')
 export class AvatarController {

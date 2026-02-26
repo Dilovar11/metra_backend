@@ -4,7 +4,6 @@ import { ImageGeneratorService } from './image-generator.service';
 import { GenerateImageDto } from './dto/generate-image.dto';
 import { Public } from '../../Common/decorators/public.decorator';
 
-@Public()
 @ApiTags('Генерация изображений') 
 @Controller('generations')
 export class ImageGeneratorController {
