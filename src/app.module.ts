@@ -33,6 +33,7 @@ import { TelegramGuard } from './Modules/auth/telegram.guard';
 
       autoLoadEntities: true,
       synchronize: true,
+      dropSchema: true,
       logging: false,
 
       extra: {
