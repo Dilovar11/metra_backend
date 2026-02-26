@@ -1,5 +1,5 @@
-import { IsString, IsNotEmpty, IsUrl, IsEnum } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsUrl, IsEnum, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'; // Используем ApiPropertyOptional
 import { GenerationType } from '../../../Entities/generation.entity';
 
 export class GenerateImageDto {
@@ -9,18 +9,18 @@ export class GenerateImageDto {
 
     @ApiProperty({
         description: 'Текстовое описание того, что нужно сделать с изображением',
-        example: 'Преврати это фото в персонажа аниме',
+        example: 'Нарисуй кота в космосе',
     })
     @IsString()
     @IsNotEmpty({ message: 'Описание (prompt) обязательно' })
     prompt: string;
 
-    @ApiProperty({
-        description: 'URL исходного изображения для обработки',
+    @ApiPropertyOptional({ // Меняем на Optional для Swagger
+        description: 'URL исходного изображения (необязательно)',
         example: 'https://example.com/user-photo.jpg',
+        nullable: true
     })
-    @IsString()
-    @IsNotEmpty({ message: 'Фото обязательно для обработки' })
+    @IsOptional() // Позволяет полю быть отсутствующим или null
     @IsUrl({}, { message: 'Поле image должно быть корректной ссылкой' })
-    image: string;
+    image?: string; // Добавляем знак вопроса (Optional property)
 }
