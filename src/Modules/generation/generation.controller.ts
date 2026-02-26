@@ -22,7 +22,7 @@ export class GenerationController {
   }
 
   @Get('by-user')
-  @ApiOperation({ summary: 'Генерации текущего пользователя' })
+  @ApiOperation({ summary: 'Генераци текущего пользователя' })
   @ApiQuery({ name: 'filter', required: false, enum: ['all', 'photo', 'video'] })
   async findAll(
     @TgUser('id') userId: string, 
