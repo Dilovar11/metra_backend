@@ -4,7 +4,9 @@ import { GenerationService } from './generation.service';
 import { CreateGenerationDto } from './dto/create-generation.dto';
 import { GenerationType } from 'src/Entities/generation.entity';
 import { TgUser } from '../../Common/decorators/user.decorator';
+import { Public } from '../../Common/decorators/public.decorator';
 
+@Public()
 @ApiTags('Generations')
 @Controller('generations')
 export class GenerationController {

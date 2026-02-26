@@ -2,8 +2,10 @@ import { Controller, Post, Body, BadRequestException, InternalServerErrorExcepti
 import { AvatarGeneratorService } from './generate-avatar.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { GenerateAvatarDto } from './dto/generate-avatar.dto';
-import { TgUser } from 'src/Common/decorators/user.decorator';
+import { TgUser } from '../../Common/decorators/user.decorator';
+import { Public } from '../../Common/decorators/public.decorator';
 
+@Public()
 @ApiTags('Генерация аватара')
 @Controller('avatars')
 export class AvatarGeneratorController {
