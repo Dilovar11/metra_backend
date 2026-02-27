@@ -51,23 +51,27 @@ export class ImageGeneratorService {
     async generate(dto: GenerateImageDto, userId: string) {
         console.log(`[Imagen 4] Запуск генерации для пользователя: ${userId}`);
 
-        // Подготовка инстанса для Google API
+        // 1. Подготовка структуры инстанса
         const instancePayload: any = {
             prompt: dto.prompt,
         };
 
-        // Если передан URL изображения, превращаем его в base64
         if (dto.image) {
             console.log(`[Imagen 4] Загрузка референса: ${dto.image}`);
             const base64Source = await this.getBase64FromUrl(dto.image);
+            
+            // В Imagen 4 структура для референсного изображения выглядит так:
             instancePayload.image = {
-                bytesBase64Encoded: base64Source
+                bytesBase64Encoded: base64Source,
+                mimeType: "image/jpeg" // Добавляем mimeType, это важно для INTERNAL ошибок
             };
         }
 
         const parametersPayload = {
             sampleCount: 1,
-            aspectRatio: "1:1",
+            // Для Imagen 4 используйте 'aspectRatio' только БЕЗ входного фото.
+            // Если есть входное фото, модель обычно наследует его размер.
+            ...(dto.image ? {} : { aspectRatio: "1:1" }), 
         };
 
         // Используем as any для обхода строгой типизации Protobuf (IValue)
