@@ -65,6 +65,7 @@ export class AvatarController {
     return this.avatarService.remove(id);
   }
 
+  @Public()
   @Patch('set-main')
   @ApiOperation({ summary: 'Установить главное изображение аватара' })
   @ApiBody({
