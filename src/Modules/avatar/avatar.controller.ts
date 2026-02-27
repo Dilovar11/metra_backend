@@ -5,7 +5,6 @@ import { Avatar } from '../../Entities/avatar.entity';
 import { CreateAvatarDto } from './dto/create-avatar.dto';
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
 import { TgUser } from '../../Common/decorators/user.decorator';
-import { Public } from '../../Common/decorators/public.decorator';
 
 
 @ApiTags('Avatars')
@@ -65,7 +64,6 @@ export class AvatarController {
     return this.avatarService.remove(id);
   }
 
-  @Public()
   @Patch('set-main')
   @ApiOperation({ summary: 'Установить главное изображение аватара' })
   @ApiBody({
