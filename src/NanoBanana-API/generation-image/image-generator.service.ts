@@ -8,7 +8,7 @@ import axios from 'axios';
 @Injectable()
 export class ImageGeneratorService {
     private client: PredictionServiceClient;
-    
+
     private readonly project = process.env.GOOGLE_PROJECT_ID;
     private readonly location = process.env.GOOGLE_LOCATION || 'us-central1';
     // Используем Imagen 4 Standard
@@ -17,7 +17,7 @@ export class ImageGeneratorService {
     constructor(private readonly filesService: FilesService) {
         // 1. Получаем строку JSON из переменных окружения (для Vercel)
         const credentialsJson = process.env.GOOGLE_CREDS_JSON;
-        
+
         let credentials: any = undefined;
         if (credentialsJson) {
             try {
@@ -56,30 +56,35 @@ export class ImageGeneratorService {
             prompt: dto.prompt,
         };
 
+        // Если передан URL изображения
         if (dto.image) {
             console.log(`[Imagen 4] Загрузка референса: ${dto.image}`);
             const base64Source = await this.getBase64FromUrl(dto.image);
-            
-            // В Imagen 4 структура для референсного изображения выглядит так:
+
+            // В Imagen 4 для Image-to-Image объект image должен содержать mimeType
             instancePayload.image = {
                 bytesBase64Encoded: base64Source,
-                mimeType: "image/jpeg" // Добавляем mimeType, это важно для INTERNAL ошибок
+                mimeType: "image/jpeg" // Указываем явно, чтобы избежать INTERNAL error
             };
         }
 
-        const parametersPayload = {
+        // 2. Параметры запроса
+        const parametersPayload: any = {
             sampleCount: 1,
-            // Для Imagen 4 используйте 'aspectRatio' только БЕЗ входного фото.
-            // Если есть входное фото, модель обычно наследует его размер.
-            ...(dto.image ? {} : { aspectRatio: "1:1" }), 
         };
 
-        // Используем as any для обхода строгой типизации Protobuf (IValue)
+        // ВАЖНО: aspectRatio можно указывать ТОЛЬКО если нет входного изображения
+        if (!dto.image) {
+            parametersPayload.aspectRatio = "1:1";
+        } else {
+            // Если есть фото, можно добавить силу влияния промпта на фото (от 0 до 1)
+            // parametersPayload.imagePromptWeight = 0.5; 
+        }
+
         const instanceValue = helpers.toValue(instancePayload) as any;
         const parameterValue = helpers.toValue(parametersPayload) as any;
 
         try {
-            // 4. Запрос к Vertex AI
             const [response] = await this.client.predict({
                 endpoint: this.endpoint,
                 instances: [instanceValue],
@@ -88,14 +93,12 @@ export class ImageGeneratorService {
 
             const predictions = response.predictions;
             if (!predictions || predictions.length === 0) {
-                throw new Error('Imagen 4 вернул пустой результат. Возможно, промпт нарушает правила безопасности.');
+                throw new Error('Imagen 4 не вернул результат. Проверьте промпт на цензуру.');
             }
 
-            // 5. Декодирование результата
             const result: any = helpers.fromValue(predictions[0] as any);
             const base64Image = result.bytesBase64Encoded;
 
-            // 6. Сохранение в Cloudinary (перезапись старого фото пользователя)
             const savedFile = await this.filesService.saveAiGeneratedImage(base64Image, userId);
 
             return {
