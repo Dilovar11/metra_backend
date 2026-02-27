@@ -15,8 +15,24 @@ export class ImageGeneratorService {
     private readonly endpoint = `projects/${this.project}/locations/${this.location}/publishers/google/models/imagen-4.0-generate-001`;
 
     constructor(private readonly filesService: FilesService) {
+        // 1. Получаем строку JSON из переменных окружения (для Vercel)
+        const credentialsJson = process.env.GOOGLE_CREDS_JSON;
+        
+        let credentials: any = undefined;
+        if (credentialsJson) {
+            try {
+                // 2. Парсим строку в объект
+                credentials = JSON.parse(credentialsJson);
+            } catch (e) {
+                console.error('Ошибка парсинга GOOGLE_CREDS_JSON. Проверьте формат в настройках Vercel.', e);
+            }
+        }
+
+        // 3. Инициализируем клиент с передачей объекта credentials напрямую
         this.client = new PredictionServiceClient({
-            apiKey: process.env.GOOGLE_API_KEY,
+            apiEndpoint: `${this.location}-aiplatform.googleapis.com`,
+            credentials: credentials,
+            projectId: this.project,
         });
     }
 
@@ -28,21 +44,21 @@ export class ImageGeneratorService {
             const response = await axios.get(url, { responseType: 'arraybuffer' });
             return Buffer.from(response.data, 'binary').toString('base64');
         } catch (error) {
-            throw new Error(`Не удалось загрузить изображение по URL: ${error.message}`);
+            throw new Error(`Не удалось загрузить исходное изображение: ${error.message}`);
         }
     }
 
     async generate(dto: GenerateImageDto, userId: string) {
-        console.log(`Запрос от пользователя ${userId} к Imagen 4: ${dto.prompt}`);
+        console.log(`[Imagen 4] Запуск генерации для пользователя: ${userId}`);
 
-        // 1. Подготовка структуры инстанса
+        // Подготовка инстанса для Google API
         const instancePayload: any = {
             prompt: dto.prompt,
         };
 
-        // Если передан URL изображения, скачиваем его и добавляем в запрос для Image-to-Image
+        // Если передан URL изображения, превращаем его в base64
         if (dto.image) {
-            console.log(`Использование исходного изображения для генерации: ${dto.image}`);
+            console.log(`[Imagen 4] Загрузка референса: ${dto.image}`);
             const base64Source = await this.getBase64FromUrl(dto.image);
             instancePayload.image = {
                 bytesBase64Encoded: base64Source
@@ -51,17 +67,15 @@ export class ImageGeneratorService {
 
         const parametersPayload = {
             sampleCount: 1,
-            aspectRatio: "1:1", // Standard 1k
-            // Можно добавить степень влияния исходного фото, если используется Image-to-Image
-            // imagePromptWeight: 0.5 
+            aspectRatio: "1:1",
         };
 
-        // 2. Преобразование в формат Protobuf IValue
+        // Используем as any для обхода строгой типизации Protobuf (IValue)
         const instanceValue = helpers.toValue(instancePayload) as any;
         const parameterValue = helpers.toValue(parametersPayload) as any;
 
         try {
-            // 3. Вызов Google Cloud Vertex AI
+            // 4. Запрос к Vertex AI
             const [response] = await this.client.predict({
                 endpoint: this.endpoint,
                 instances: [instanceValue],
@@ -70,32 +84,32 @@ export class ImageGeneratorService {
 
             const predictions = response.predictions;
             if (!predictions || predictions.length === 0) {
-                throw new Error('Imagen 4 не вернул результат. Проверьте настройки безопасности или промпт.');
+                throw new Error('Imagen 4 вернул пустой результат. Возможно, промпт нарушает правила безопасности.');
             }
 
-            // 4. Извлечение base64 из ответа
+            // 5. Декодирование результата
             const result: any = helpers.fromValue(predictions[0] as any);
             const base64Image = result.bytesBase64Encoded;
 
-            // 5. Сохранение в Cloudinary (FilesService перезапишет старый файл пользователя)
+            // 6. Сохранение в Cloudinary (перезапись старого фото пользователя)
             const savedFile = await this.filesService.saveAiGeneratedImage(base64Image, userId);
 
             return {
-                externalTaskId: `metra-gen-${Date.now()}`,
                 status: 'success',
+                externalTaskId: `metra-${Date.now()}`,
                 originalImage: dto.image ?? null,
-                processedImage: savedFile.url, // URL из Cloudinary
+                processedImage: savedFile.url,
                 metadata: {
                     type: dto.type,
                     prompt: dto.prompt,
                     timestamp: new Date().toISOString(),
-                    userId: userId,
                     model: 'imagen-4.0-standard'
                 }
             };
         } catch (error) {
             console.error('Ошибка в ImageGeneratorService:', error);
-            throw new Error(`Ошибка генерации: ${error.message}`);
+            const errorMessage = error.details || error.message;
+            throw new Error(`Ошибка генерации: ${errorMessage}`);
         }
     }
 }
