@@ -160,4 +160,31 @@ export class FilesService {
     });
   }
 
+  async saveAiGeneratedImage(base64Data: string, userId: string) {
+    const userFolder = `metra_generations`;
+    const customFileName = `gen_${userId}`; // Фиксированное имя для перезаписи
+
+    // 1. Конвертируем base64 в буфер (убираем префикс если он есть)
+    const base64Image = base64Data.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(base64Image, 'base64');
+
+    // 2. Создаем объект имитирующий Express.Multer.File для совместимости с вашим uploadToCloudinary
+    const fileMock = {
+      buffer: buffer,
+    } as Express.Multer.File;
+
+    try {
+      // uploadToCloudinary уже имеет overwrite: true в вашем коде
+      const result = await this.uploadToCloudinary(fileMock, userFolder, customFileName);
+
+      return {
+        filename: result.public_id,
+        url: result.secure_url, // Возвращаем URL для фронтенда
+        userId: userId
+      };
+    } catch (error) {
+      throw new Error(`Ошибка сохранения AI фото: ${error.message}`);
+    }
+  }
+
 }
