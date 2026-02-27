@@ -161,25 +161,29 @@ export class FilesService {
   }
 
   async saveAiGeneratedImage(base64Data: string, userId: string) {
-    const userFolder = `metra_generations`;
-    const customFileName = `gen_${userId}`; // Фиксированное имя для перезаписи
+    // 1. Исправляем путь: папка пользователя внутри основного каталога
+    const userFolder = `metra_generations/${userId}`;
 
-    // 1. Конвертируем base64 в буфер (убираем префикс если он есть)
+    // 2. Делаем имя файла уникальным (например, через timestamp или UUID)
+    // Это предотвратит перезапись предыдущих генераций
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const customFileName = `gen_${uniqueSuffix}`;
+
+    // Конвертируем base64 в буфер
     const base64Image = base64Data.replace(/^data:image\/\w+;base64,/, '');
     const buffer = Buffer.from(base64Image, 'base64');
 
-    // 2. Создаем объект имитирующий Express.Multer.File для совместимости с вашим uploadToCloudinary
     const fileMock = {
       buffer: buffer,
     } as Express.Multer.File;
 
     try {
-      // uploadToCloudinary уже имеет overwrite: true в вашем коде
+      // Передаем обновленный userFolder и уникальный customFileName
       const result = await this.uploadToCloudinary(fileMock, userFolder, customFileName);
 
       return {
         filename: result.public_id,
-        url: result.secure_url, // Возвращаем URL для фронтенда
+        url: result.secure_url,
         userId: userId
       };
     } catch (error) {
