@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { GoogleGenerativeAI } from '@google/generative-ai'; // Идеально совпадает с Python SDK
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { FilesService } from '../../Modules/file/file.service';
 import { GenerateImageDto } from './dto/generate-image.dto';
 import axios from 'axios';
@@ -7,89 +7,69 @@ import axios from 'axios';
 @Injectable()
 export class ImageGeneratorService {
     private genAI: GoogleGenerativeAI;
-    
-    // --- ОПРЕДЕЛЯЕМ МОДЕЛИ (аналог Python-успеха) ---
-    private readonly repairModelId = 'gemini-3.1-flash-image-preview'; // Для ремонта фото
-    private readonly fastModelId = 'gemini-2.0-flash'; // Для быстрого текста (стабильная Flash модель)
+
+    // Это та самая модель, которая выдала УСПЕХ в питоне. 
+    // Она генерирует КАРТИНКИ, а не текст.
+    private readonly modelId = 'gemini-3.1-flash-image-preview';
 
     constructor(private readonly filesService: FilesService) {
-        // Библиотека @google/generative-ai работает через API_KEY
-        const apiKey = process.env.GOOGLE_API_KEY || ''; 
-        if (!apiKey) {
-            console.error(' ВНИМАНИЕ: Не задан GOOGLE_API_KEY в .env!');
-        }
+        const apiKey = process.env.GOOGLE_API_KEY || '';
         this.genAI = new GoogleGenerativeAI(apiKey);
     }
 
     async generate(dto: GenerateImageDto, userId: string) {
-        let modelId: string;
+        const model = this.genAI.getGenerativeModel({ model: this.modelId });
         let promptParts: any[] = [];
 
-        // --- ЛОГИКА ПЕРЕКЛЮЧЕНИЯ (делай так...) ---
         if (dto.image) {
-            // 1. ФОТО ЕСТЬ -> Режим ремонта
-            console.log(` Режим Ремонта для: ${userId}`);
-            modelId = this.repairModelId;
-
-            promptParts = [
-                `SYSTEM: You are an AI image editor. Generate a new high-quality image.`,
-                `PROMPT: ${dto.prompt}`
-            ];
-
-            // Добавляем картинку как в Python (Успех!)
+            // СЛУЧАЙ 1: Ремонт/Изменение готового фото
             const base64Data = await this.getBase64FromUrl(dto.image);
-            promptParts.push({
-                inlineData: {
-                    data: base64Data,
-                    mimeType: 'image/jpeg'
-                }
-            });
-
+            promptParts = [
+                { text: "TASK: Act as an expert interior architect. Edit this photo to match the request." },
+                { text: `REQUEST: ${dto.prompt}. Keep the room layout but change materials to high-end luxury.` },
+                { inlineData: { data: base64Data, mimeType: 'image/jpeg' } }
+            ];
         } else {
-            // 2. ФОТО НЕТ -> Режим Fast
-            console.log(` Режим Fast (Текст) для: ${userId}`);
-            modelId = this.fastModelId;
-
-            // Для Fast модели часто лучше передавать чистый промпт
-            promptParts = [`${dto.prompt}`];
+            // СЛУЧАЙ 2: Создание новой картинки с нуля (без фото)
+            promptParts = [
+                { text: "TASK: You are a professional photorealistic image generator." },
+                { text: `GENERATE_IMAGE: ${dto.prompt}. Ultra-realistic, 8k resolution, interior design style.` }
+            ];
         }
 
-        // --- ОТПРАВКА ЗАПРОСА ---
         try {
-            // Динамически получаем нужную модель
-            const model = this.genAI.getGenerativeModel({ model: modelId });
-
-            // Вызов, аналогичный Python-скрипту
-            const result = await model.generateContent(promptParts);
+            // Отправляем запрос
+            const result = await model.generateContent({ contents: [{ role: 'user', parts: promptParts }] });
             const response = await result.response;
-            
-            // Ищем изображение в ответе (как в Python Успехе!)
+
+            // Извлекаем КАРТИНКУ из ответа (как в твоем успешном тесте)
             const imagePart = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
 
             if (!imagePart || !imagePart.inlineData) {
-                throw new Error('Модель не вернула изображение. Проверьте фильтры безопасности.');
+                // Если вдруг модель ответила текстом вместо картинки (бывает при жесткой цензуре)
+                throw new Error('Google заблокировал генерацию этой картинки или вернул текст вместо изображения.');
             }
 
             const base64Image = imagePart.inlineData.data;
+
+            // Сохраняем готовую картинку
             const savedFile = await this.filesService.saveAiGeneratedImage(base64Image, userId);
 
             return {
                 status: 'success',
                 processedImage: savedFile.url,
-                metadata: { model: modelId, engine: 'Generative-AI SDK' }
+                metadata: { model: this.modelId, type: dto.image ? 'edit' : 'create' }
             };
         } catch (error) {
-            console.error('Ошибка SDK:', error.message);
-            throw new Error(`Ошибка генерации: ${error.message}`);
+            console.error('Ошибка генерации:', error.message);
+            throw new Error(`Ошибка Nano Banana: ${error.message}`);
         }
     }
 
     private async getBase64FromUrl(url: string): Promise<string> {
-        // Оптимизируем вес для جلوگیری ошибки 500 (как раньше)
         const optimizedUrl = url.includes('cloudinary.com')
             ? url.replace('/upload/', '/upload/w_1024,c_limit,q_80,f_jpg/')
             : url;
-
         const response = await axios.get(optimizedUrl, { responseType: 'arraybuffer' });
         return Buffer.from(response.data, 'binary').toString('base64');
     }
