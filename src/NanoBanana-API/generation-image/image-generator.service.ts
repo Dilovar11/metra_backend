@@ -1,99 +1,91 @@
 import { Injectable } from '@nestjs/common';
-import { VertexAI } from '@google-cloud/vertexai'; 
+import { GoogleGenerativeAI } from '@google/generative-ai'; // Идеально совпадает с Python SDK
 import { FilesService } from '../../Modules/file/file.service';
 import { GenerateImageDto } from './dto/generate-image.dto';
 import axios from 'axios';
 
 @Injectable()
 export class ImageGeneratorService {
-    private vertexAI: VertexAI;
-
-    // Берем данные из окружения, как в твоем проекте
-    private readonly project = process.env.GOOGLE_PROJECT_ID || 'metra-488710';
-    private readonly location = process.env.GOOGLE_LOCATION || 'us-central1';
-
-    // Используем ID, который выдал "Успех" в Python тесте
-    // ВАЖНО: Без префикса "models/", так как SDK добавит его сам
-    private readonly geminiModelId = 'gemini-3.1-flash-image-preview'; 
+    private genAI: GoogleGenerativeAI;
+    
+    // --- ОПРЕДЕЛЯЕМ МОДЕЛИ (аналог Python-успеха) ---
+    private readonly repairModelId = 'gemini-3.1-flash-image-preview'; // Для ремонта фото
+    private readonly fastModelId = 'gemini-2.0-flash'; // Для быстрого текста (стабильная Flash модель)
 
     constructor(private readonly filesService: FilesService) {
-        const credentialsJson = process.env.GOOGLE_CREDS_JSON;
-        const credentials = credentialsJson ? JSON.parse(credentialsJson) : undefined;
-
-        this.vertexAI = new VertexAI({ 
-            project: this.project, 
-            location: this.location,
-            googleAuthOptions: { credentials } 
-        });
+        // Библиотека @google/generative-ai работает через API_KEY
+        const apiKey = process.env.GOOGLE_API_KEY || ''; 
+        if (!apiKey) {
+            console.error(' ВНИМАНИЕ: Не задан GOOGLE_API_KEY в .env!');
+        }
+        this.genAI = new GoogleGenerativeAI(apiKey);
     }
 
     async generate(dto: GenerateImageDto, userId: string) {
-        // Инициализируем модель Nano Banana 2
-        const model = this.vertexAI.getGenerativeModel({ 
-            model: this.geminiModelId 
-        });
+        let modelId: string;
+        let promptParts: any[] = [];
 
-        console.log(`[Nano Banana 2] Запуск генерации для пользователя: ${userId}`);
-        return this.generateWithNano(model, dto, userId);
-    }
-
-    private async generateWithNano(model: any, dto: GenerateImageDto, userId: string) {
-        // Формируем части запроса, как в успешном Python скрипте
-        const parts: any[] = [
-            { text: `SYSTEM: You are an AI image editor. Generate a new high-quality image based on the input.` },
-            { text: `PROMPT: ${dto.prompt}` }
-        ];
-
-        // Если пришло фото, конвертируем в Base64 и добавляем в запрос
+        // --- ЛОГИКА ПЕРЕКЛЮЧЕНИЯ (делай так...) ---
         if (dto.image) {
-            const base64Source = await this.getBase64FromUrl(dto.image);
-            parts.push({
+            // 1. ФОТО ЕСТЬ -> Режим ремонта
+            console.log(` Режим Ремонта для: ${userId}`);
+            modelId = this.repairModelId;
+
+            promptParts = [
+                `SYSTEM: You are an AI image editor. Generate a new high-quality image.`,
+                `PROMPT: ${dto.prompt}`
+            ];
+
+            // Добавляем картинку как в Python (Успех!)
+            const base64Data = await this.getBase64FromUrl(dto.image);
+            promptParts.push({
                 inlineData: {
-                    data: base64Source,
+                    data: base64Data,
                     mimeType: 'image/jpeg'
                 }
             });
+
+        } else {
+            // 2. ФОТО НЕТ -> Режим Fast
+            console.log(` Режим Fast (Текст) для: ${userId}`);
+            modelId = this.fastModelId;
+
+            // Для Fast модели часто лучше передавать чистый промпт
+            promptParts = [`${dto.prompt}`];
         }
 
-        const request = {
-            contents: [{ role: 'user', parts }]
-        };
-
+        // --- ОТПРАВКА ЗАПРОСА ---
         try {
-            const result = await model.generateContent(request);
-            const response = result.response;
+            // Динамически получаем нужную модель
+            const model = this.genAI.getGenerativeModel({ model: modelId });
+
+            // Вызов, аналогичный Python-скрипту
+            const result = await model.generateContent(promptParts);
+            const response = await result.response;
             
-            // Ищем данные изображения в ответе (inlineData)
-            const imagePart = response.candidates?.[0]?.content?.parts.find((p: any) => p.inlineData);
-            
+            // Ищем изображение в ответе (как в Python Успехе!)
+            const imagePart = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
+
             if (!imagePart || !imagePart.inlineData) {
-                // Если картинки нет, проверяем, не вернула ли модель текстовую ошибку
-                const textPart = response.candidates?.[0]?.content?.parts.find((p: any) => p.text);
-                throw new Error(textPart?.text || 'Модель не вернула изображение. Проверьте фильтры безопасности в Google Console.');
+                throw new Error('Модель не вернула изображение. Проверьте фильтры безопасности.');
             }
 
             const base64Image = imagePart.inlineData.data;
-            
-            // Сохраняем через твой FilesService
             const savedFile = await this.filesService.saveAiGeneratedImage(base64Image, userId);
 
             return {
                 status: 'success',
                 processedImage: savedFile.url,
-                metadata: { 
-                    model: this.geminiModelId,
-                    engine: 'Nano Banana 2'
-                }
+                metadata: { model: modelId, engine: 'Generative-AI SDK' }
             };
         } catch (error) {
-            console.error('Критическая ошибка Nano Banana:', error.message);
+            console.error('Ошибка SDK:', error.message);
             throw new Error(`Ошибка генерации: ${error.message}`);
         }
     }
 
     private async getBase64FromUrl(url: string): Promise<string> {
-        // Оптимизируем URL Cloudinary для уменьшения веса (чтобы не было ошибки 500)
-        // Сжимаем до 1024px, качество 80%
+        // Оптимизируем вес для جلوگیری ошибки 500 (как раньше)
         const optimizedUrl = url.includes('cloudinary.com')
             ? url.replace('/upload/', '/upload/w_1024,c_limit,q_80,f_jpg/')
             : url;
