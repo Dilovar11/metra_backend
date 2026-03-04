@@ -7,12 +7,12 @@ import axios from 'axios';
 @Injectable()
 export class ImageGeneratorService {
     private client: PredictionServiceClient;
-
+    
     private readonly project = process.env.GOOGLE_PROJECT_ID;
     private readonly location = process.env.GOOGLE_LOCATION || 'us-central1';
-
-    // Используем Imagen 3 Generate — она лучше всего подходит для изменения стиля всего фото
-    private readonly endpoint = `projects/${this.project}/locations/${this.location}/publishers/google/models/imagen-3.0-generate-002`;
+    
+    // Используем ровно ту модель, которая сработала на скрине
+    private readonly endpoint = `projects/${this.project}/locations/${this.location}/publishers/google/models/imagen-3.0-capability-001`;
 
     constructor(private readonly filesService: FilesService) {
         const credentialsJson = process.env.GOOGLE_CREDS_JSON;
@@ -25,40 +25,39 @@ export class ImageGeneratorService {
         });
     }
 
-    /**
-     * Основной метод генерации
-     */
     async generate(dto: GenerateImageDto, userId: string) {
-        console.log(`[Imagen 3] Старт. Пользователь: ${userId}`);
+        console.log(`[Imagen 3 Capability] Генерация по примеру консоли для: ${userId}`);
 
-        const instancePayload: any = {
+        // Скачиваем и оптимизируем фото сразу (чтобы не было проблем с размером)
+        const base64Source = await this.getBase64FromUrl(dto.image!);
+
+        // 1. Формируем структуру INSTANCE точно как в RawReferenceImage
+        const instancePayload = {
             prompt: dto.prompt,
+            referenceImages: [
+                {
+                    referenceId: 1,
+                    referenceType: "REFERENCE_TYPE_RAW",
+                    referenceImage: {
+                        bytesBase64Encoded: base64Source
+                    }
+                }
+            ]
         };
 
-        const parametersPayload: any = {
+        // 2. Формируем PARAMETERS как на скрине
+        const parametersPayload = {
             sampleCount: 1,
-            addWatermark: false,
+            // На скрине выбран режим улучшения, для capability это часто скрыто, 
+            // но в API требует указания editMode или использования базовых параметров
             personGeneration: "allow_all",
+            // Если оставить пустым или "block_few", как в Python коде
+            safetySetting: "block_few",
+            addWatermark: false
         };
-
-        if (dto.image) {
-            const base64Source = await this.getBase64FromUrl(dto.image);
-            
-            // ВАЖНО: Убедитесь, что здесь нет aspectRatio
-            // Для Imagen 3 Image-to-Image структура должна быть ТАКОЙ:
-            instancePayload.image = {
-                bytesBase64Encoded: base64Source,
-            };
-            
-            // Если ошибка 13 остается, попробуйте УМЕНЬШИТЬ этот вес до 0.4
-            parametersPayload.imagePromptWeight = 0.5;
-        } else {
-            parametersPayload.aspectRatio = "1:1";
-        }
 
         try {
-            // Используем helpers.toValue только для объектов, 
-            // но иногда SDK лучше переваривает простые объекты
+            // ВАЖНО: Мы используем predict, но передаем структуру RawReferenceImage
             const [response] = await this.client.predict({
                 endpoint: this.endpoint,
                 instances: [helpers.toValue(instancePayload) as any],
@@ -66,47 +65,32 @@ export class ImageGeneratorService {
             });
 
             if (!response.predictions || response.predictions.length === 0) {
-                throw new Error('Модель не вернула результат. Возможно, промпт заблокирован фильтрами безопасности.');
+                throw new Error('Модель не вернула результат. Проверьте фильтры безопасности.');
             }
 
             const result: any = helpers.fromValue(response.predictions[0] as any);
+            const base64Image = result.bytesBase64Encoded;
 
-            // В Imagen 3 результат может быть в bytesBase64Encoded или в image
-            const base64Image = result.bytesBase64Encoded || result.image;
-
-            if (!base64Image) {
-                throw new Error('Данные изображения отсутствуют в ответе модели.');
-            }
-
-            // 4. Сохраняем результат через FilesService
             const savedFile = await this.filesService.saveAiGeneratedImage(base64Image, userId);
 
             return {
                 status: 'success',
                 processedImage: savedFile.url,
-                metadata: {
-                    model: 'imagen-3.0-generate',
-                    hasReferenceImage: !!dto.image,
-                    prompt: dto.prompt
-                }
+                metadata: { model: 'imagen-3.0-capability-001' }
             };
-
         } catch (error) {
-            console.error('Критическая ошибка Imagen:', error);
+            console.error('Ошибка в стиле консоли Google:', error.details || error.message);
             throw new Error(`Ошибка генерации: ${error.details || error.message}`);
         }
     }
 
     private async getBase64FromUrl(url: string): Promise<string> {
-        try {
-            const response = await axios.get(url, { responseType: 'arraybuffer' });
-            // Проверяем размер (если больше 5МБ, это может быть причиной ошибки 13)
-            if (response.data.byteLength > 5 * 1024 * 1024) {
-                console.warn('[Imagen] Файл слишком большой, возможна ошибка INTERNAL');
-            }
-            return Buffer.from(response.data, 'binary').toString('base64');
-        } catch (error) {
-            throw new Error(`Ошибка загрузки фото: ${error.message}`);
-        }
+        // Добавляем оптимизацию Cloudinary, чтобы гарантировать успех
+        const optimizedUrl = url.includes('cloudinary.com') 
+            ? url.replace('/upload/', '/upload/w_1024,c_limit,f_jpg/') 
+            : url;
+            
+        const response = await axios.get(optimizedUrl, { responseType: 'arraybuffer' });
+        return Buffer.from(response.data, 'binary').toString('base64');
     }
 }
