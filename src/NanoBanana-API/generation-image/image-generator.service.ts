@@ -53,6 +53,7 @@ export class ImageGeneratorService {
 
             parametersPayload = {
                 sampleCount: 1,
+                editMode: "EDIT_MODE_INPAINT_INSERTION",
                 personGeneration: "allow_all",
                 safetySetting: "block_few",
                 addWatermark: false
