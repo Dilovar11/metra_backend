@@ -8,10 +8,12 @@ import axios from 'axios';
 export class ImageGeneratorService {
     private vertexAI: VertexAI;
 
-    private readonly project = process.env.GOOGLE_PROJECT_ID;
+    // Берем данные из окружения, как в твоем проекте
+    private readonly project = process.env.GOOGLE_PROJECT_ID || 'metra-488710';
     private readonly location = process.env.GOOGLE_LOCATION || 'us-central1';
 
-    // Используем ID, который принес успех в Python
+    // Используем ID, который выдал "Успех" в Python тесте
+    // ВАЖНО: Без префикса "models/", так как SDK добавит его сам
     private readonly geminiModelId = 'gemini-3.1-flash-image-preview'; 
 
     constructor(private readonly filesService: FilesService) {
@@ -26,22 +28,23 @@ export class ImageGeneratorService {
     }
 
     async generate(dto: GenerateImageDto, userId: string) {
-        // Получаем модель Nano Banana 2
-        const model = this.vertexAI.getGenerativeModel({ model: this.geminiModelId });
+        // Инициализируем модель Nano Banana 2
+        const model = this.vertexAI.getGenerativeModel({ 
+            model: this.geminiModelId 
+        });
 
-        if (dto.image) {
-            console.log(`[Nano Banana 2] Режим Редактирования для: ${userId}`);
-            return this.generateWithNano(model, dto, userId);
-        } else {
-            console.log(`[Nano Banana 2] Режим Генерации по тексту для: ${userId}`);
-            return this.generateWithNano(model, dto, userId);
-        }
+        console.log(`[Nano Banana 2] Запуск генерации для пользователя: ${userId}`);
+        return this.generateWithNano(model, dto, userId);
     }
 
     private async generateWithNano(model: any, dto: GenerateImageDto, userId: string) {
-        const parts: any[] = [{ text: `TASK: Generate a new high-quality image. ${dto.prompt}` }];
+        // Формируем части запроса, как в успешном Python скрипте
+        const parts: any[] = [
+            { text: `SYSTEM: You are an AI image editor. Generate a new high-quality image based on the input.` },
+            { text: `PROMPT: ${dto.prompt}` }
+        ];
 
-        // Если есть картинка, добавляем её как inlineData (как в Python успехе)
+        // Если пришло фото, конвертируем в Base64 и добавляем в запрос
         if (dto.image) {
             const base64Source = await this.getBase64FromUrl(dto.image);
             parts.push({
@@ -60,16 +63,18 @@ export class ImageGeneratorService {
             const result = await model.generateContent(request);
             const response = result.response;
             
-            // Ищем байты изображения в ответе
+            // Ищем данные изображения в ответе (inlineData)
             const imagePart = response.candidates?.[0]?.content?.parts.find((p: any) => p.inlineData);
             
             if (!imagePart || !imagePart.inlineData) {
-                // Проверяем, не ответила ли модель текстом (отказ или описание)
+                // Если картинки нет, проверяем, не вернула ли модель текстовую ошибку
                 const textPart = response.candidates?.[0]?.content?.parts.find((p: any) => p.text);
-                throw new Error(textPart?.text || 'Модель не вернула изображение.');
+                throw new Error(textPart?.text || 'Модель не вернула изображение. Проверьте фильтры безопасности в Google Console.');
             }
 
             const base64Image = imagePart.inlineData.data;
+            
+            // Сохраняем через твой FilesService
             const savedFile = await this.filesService.saveAiGeneratedImage(base64Image, userId);
 
             return {
@@ -81,13 +86,14 @@ export class ImageGeneratorService {
                 }
             };
         } catch (error) {
-            console.error('Nano Banana Error:', error.message);
+            console.error('Критическая ошибка Nano Banana:', error.message);
             throw new Error(`Ошибка генерации: ${error.message}`);
         }
     }
 
     private async getBase64FromUrl(url: string): Promise<string> {
-        // Оптимизируем размер для предотвращения 500 ошибки
+        // Оптимизируем URL Cloudinary для уменьшения веса (чтобы не было ошибки 500)
+        // Сжимаем до 1024px, качество 80%
         const optimizedUrl = url.includes('cloudinary.com')
             ? url.replace('/upload/', '/upload/w_1024,c_limit,q_80,f_jpg/')
             : url;
