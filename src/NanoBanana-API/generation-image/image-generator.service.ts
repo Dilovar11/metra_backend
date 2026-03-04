@@ -32,37 +32,23 @@ export class ImageGeneratorService {
         let parametersPayload: any;
 
         if (dto.image) {
-            console.log(`[Imagen 3] Режим Capability с авто-маской для: ${userId}`);
-            endpoint = this.capabilityModel;
+            console.log(`[Nano Banana] Режим Ремонта (Generate 002) для: ${userId}`);
+            endpoint = this.capabilityModel; // Используем модель генерации вместо capability
 
             const base64Source = await this.getBase64FromUrl(dto.image);
 
             instancePayload = {
                 prompt: dto.prompt,
-                referenceImages: [
-                    {
-                        referenceId: 1,
-                        referenceType: "REFERENCE_TYPE_RAW",
-                        referenceImage: {
-                            bytesBase64Encoded: base64Source
-                        }
-                    },
-                    {
-                        referenceId: 2,
-                        referenceType: "REFERENCE_TYPE_MASK",
-                        maskImageConfig: {
-                            // MASK_MODE_USER_PROVIDED требует байты, а мы используем автоматику:
-                            // MASK_MODE_FOREGROUND — менять объект, MASK_MODE_BACKGROUND — менять фон
-                            maskMode: "MASK_MODE_FOREGROUND"
-                        }
-                    }
-                ]
+                image: {
+                    bytesBase64Encoded: base64Source
+                }
             };
 
             parametersPayload = {
                 sampleCount: 1,
-                // Теперь editMode сработает, так как есть вторая "картинка" (маска) в массиве
-                editMode: "EDIT_MODE_INPAINT_INSERTION",
+                // imagePromptWeight управляет тем, насколько сильно менять фото
+                // 0.1 — почти не меняет, 0.9 — меняет полностью. 0.5 — золотая середина.
+                imagePromptWeight: 0.5,
                 personGeneration: "allow_all",
                 safetySetting: "block_few",
                 addWatermark: false
