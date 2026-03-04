@@ -7,10 +7,10 @@ import axios from 'axios';
 @Injectable()
 export class ImageGeneratorService {
     private client: PredictionServiceClient;
-    
+
     private readonly project = process.env.GOOGLE_PROJECT_ID;
     private readonly location = process.env.GOOGLE_LOCATION || 'us-central1';
-    
+
     // Эндпоинты для разных задач
     private readonly capabilityModel = `projects/${this.project}/locations/${this.location}/publishers/google/models/imagen-3.0-capability-001`;
     private readonly fastModel = `projects/${this.project}/locations/${this.location}/publishers/google/models/imagen-3.0-fast-generate-001`;
@@ -32,8 +32,7 @@ export class ImageGeneratorService {
         let parametersPayload: any;
 
         if (dto.image) {
-            // --- РЕЖИМ С ИЗОБРАЖЕНИЕМ (Image-to-Image) ---
-            console.log(`[Imagen 3] Режим Capability (с фото) для: ${userId}`);
+            console.log(`[Imagen 3] Режим Capability с авто-маской для: ${userId}`);
             endpoint = this.capabilityModel;
 
             const base64Source = await this.getBase64FromUrl(dto.image);
@@ -47,12 +46,22 @@ export class ImageGeneratorService {
                         referenceImage: {
                             bytesBase64Encoded: base64Source
                         }
+                    },
+                    {
+                        referenceId: 2,
+                        referenceType: "REFERENCE_TYPE_MASK",
+                        maskImageConfig: {
+                            // MASK_MODE_USER_PROVIDED требует байты, а мы используем автоматику:
+                            // MASK_MODE_FOREGROUND — менять объект, MASK_MODE_BACKGROUND — менять фон
+                            maskMode: "MASK_MODE_FOREGROUND"
+                        }
                     }
                 ]
             };
 
             parametersPayload = {
                 sampleCount: 1,
+                // Теперь editMode сработает, так как есть вторая "картинка" (маска) в массиве
                 editMode: "EDIT_MODE_INPAINT_INSERTION",
                 personGeneration: "allow_all",
                 safetySetting: "block_few",
@@ -100,7 +109,7 @@ export class ImageGeneratorService {
             return {
                 status: 'success',
                 processedImage: savedFile.url,
-                metadata: { 
+                metadata: {
                     model: dto.image ? 'imagen-3.0-capability' : 'imagen-3.0-fast',
                     cost: dto.image ? '$0.04' : '$0.02' // Примерная стоимость
                 }
@@ -112,10 +121,10 @@ export class ImageGeneratorService {
     }
 
     private async getBase64FromUrl(url: string): Promise<string> {
-        const optimizedUrl = url.includes('cloudinary.com') 
-            ? url.replace('/upload/', '/upload/w_1024,c_limit,f_jpg/') 
+        const optimizedUrl = url.includes('cloudinary.com')
+            ? url.replace('/upload/', '/upload/w_1024,c_limit,f_jpg/')
             : url;
-            
+
         const response = await axios.get(optimizedUrl, { responseType: 'arraybuffer' });
         return Buffer.from(response.data, 'binary').toString('base64');
     }
