@@ -12,7 +12,7 @@ export class ImageGeneratorService {
     private readonly location = process.env.GOOGLE_LOCATION || 'us-central1';
 
     // Эндпоинты для разных задач
-    private readonly capabilityModel = `projects/${this.project}/locations/${this.location}/publishers/google/models/imagen-3.0-capability-001`;
+    private readonly capabilityModel = `projects/${this.project}/locations/${this.location}/publishers/google/models/imagen-3.0-generate-002`;
     private readonly fastModel = `projects/${this.project}/locations/${this.location}/publishers/google/models/imagen-3.0-fast-generate-001`;
 
     constructor(private readonly filesService: FilesService) {
