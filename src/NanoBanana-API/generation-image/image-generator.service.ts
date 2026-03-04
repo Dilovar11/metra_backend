@@ -11,8 +11,9 @@ export class ImageGeneratorService {
     private readonly project = process.env.GOOGLE_PROJECT_ID;
     private readonly location = process.env.GOOGLE_LOCATION || 'us-central1';
     
-    // Используем ровно ту модель, которая сработала на скрине
-    private readonly endpoint = `projects/${this.project}/locations/${this.location}/publishers/google/models/imagen-3.0-capability-001`;
+    // Эндпоинты для разных задач
+    private readonly capabilityModel = `projects/${this.project}/locations/${this.location}/publishers/google/models/imagen-3.0-capability-001`;
+    private readonly fastModel = `projects/${this.project}/locations/${this.location}/publishers/google/models/imagen-3.0-fast-generate-001`;
 
     constructor(private readonly filesService: FilesService) {
         const credentialsJson = process.env.GOOGLE_CREDS_JSON;
@@ -26,40 +27,57 @@ export class ImageGeneratorService {
     }
 
     async generate(dto: GenerateImageDto, userId: string) {
-        console.log(`[Imagen 3 Capability] Генерация по примеру консоли для: ${userId}`);
+        let endpoint: string;
+        let instancePayload: any;
+        let parametersPayload: any;
 
-        // Скачиваем и оптимизируем фото сразу (чтобы не было проблем с размером)
-        const base64Source = await this.getBase64FromUrl(dto.image!);
+        if (dto.image) {
+            // --- РЕЖИМ С ИЗОБРАЖЕНИЕМ (Image-to-Image) ---
+            console.log(`[Imagen 3] Режим Capability (с фото) для: ${userId}`);
+            endpoint = this.capabilityModel;
 
-        // 1. Формируем структуру INSTANCE точно как в RawReferenceImage
-        const instancePayload = {
-            prompt: dto.prompt,
-            referenceImages: [
-                {
-                    referenceId: 1,
-                    referenceType: "REFERENCE_TYPE_RAW",
-                    referenceImage: {
-                        bytesBase64Encoded: base64Source
+            const base64Source = await this.getBase64FromUrl(dto.image);
+
+            instancePayload = {
+                prompt: dto.prompt,
+                referenceImages: [
+                    {
+                        referenceId: 1,
+                        referenceType: "REFERENCE_TYPE_RAW",
+                        referenceImage: {
+                            bytesBase64Encoded: base64Source
+                        }
                     }
-                }
-            ]
-        };
+                ]
+            };
 
-        // 2. Формируем PARAMETERS как на скрине
-        const parametersPayload = {
-            sampleCount: 1,
-            // На скрине выбран режим улучшения, для capability это часто скрыто, 
-            // но в API требует указания editMode или использования базовых параметров
-            personGeneration: "allow_all",
-            // Если оставить пустым или "block_few", как в Python коде
-            safetySetting: "block_few",
-            addWatermark: false
-        };
+            parametersPayload = {
+                sampleCount: 1,
+                personGeneration: "allow_all",
+                safetySetting: "block_few",
+                addWatermark: false
+            };
+        } else {
+            // --- РЕЖИМ БЕЗ ИЗОБРАЖЕНИЯ (Text-to-Image) ---
+            console.log(`[Imagen 3] Режим Fast (только текст) для: ${userId}`);
+            endpoint = this.fastModel;
+
+            instancePayload = {
+                prompt: dto.prompt
+            };
+
+            parametersPayload = {
+                sampleCount: 1,
+                aspectRatio: "1:1", // Fast модель поддерживает выбор соотношения сторон
+                personGeneration: "allow_all",
+                safetySetting: "block_few",
+                addWatermark: false
+            };
+        }
 
         try {
-            // ВАЖНО: Мы используем predict, но передаем структуру RawReferenceImage
             const [response] = await this.client.predict({
-                endpoint: this.endpoint,
+                endpoint: endpoint,
                 instances: [helpers.toValue(instancePayload) as any],
                 parameters: helpers.toValue(parametersPayload) as any,
             });
@@ -69,23 +87,30 @@ export class ImageGeneratorService {
             }
 
             const result: any = helpers.fromValue(response.predictions[0] as any);
-            const base64Image = result.bytesBase64Encoded;
+            // У разных моделей ключ может называться bytesBase64Encoded или image
+            const base64Image = result.bytesBase64Encoded || result.image;
+
+            if (!base64Image) {
+                throw new Error('Данные изображения отсутствуют в ответе.');
+            }
 
             const savedFile = await this.filesService.saveAiGeneratedImage(base64Image, userId);
 
             return {
                 status: 'success',
                 processedImage: savedFile.url,
-                metadata: { model: 'imagen-3.0-capability-001' }
+                metadata: { 
+                    model: dto.image ? 'imagen-3.0-capability' : 'imagen-3.0-fast',
+                    cost: dto.image ? '$0.04' : '$0.02' // Примерная стоимость
+                }
             };
         } catch (error) {
-            console.error('Ошибка в стиле консоли Google:', error.details || error.message);
+            console.error('Ошибка генерации:', error.details || error.message);
             throw new Error(`Ошибка генерации: ${error.details || error.message}`);
         }
     }
 
     private async getBase64FromUrl(url: string): Promise<string> {
-        // Добавляем оптимизацию Cloudinary, чтобы гарантировать успех
         const optimizedUrl = url.includes('cloudinary.com') 
             ? url.replace('/upload/', '/upload/w_1024,c_limit,f_jpg/') 
             : url;
