@@ -1,113 +1,95 @@
 import { Injectable } from '@nestjs/common';
-import { PredictionServiceClient, helpers } from '@google-cloud/aiplatform';
+import { VertexAI } from '@google-cloud/vertexai'; 
 import { FilesService } from '../../Modules/file/file.service';
 import { GenerateImageDto } from './dto/generate-image.dto';
 import axios from 'axios';
 
 @Injectable()
 export class ImageGeneratorService {
-    private client: PredictionServiceClient;
+    private vertexAI: VertexAI;
 
     private readonly project = process.env.GOOGLE_PROJECT_ID;
     private readonly location = process.env.GOOGLE_LOCATION || 'us-central1';
 
-    // СТАБИЛЬНЫЕ ЭНДПОИНТЫ (по документации Google)
-    private readonly generateModel = `projects/${this.project}/locations/${this.location}/publishers/google/models/imagen-3.0-generate-002`;
-    private readonly fastModel = `projects/${this.project}/locations/${this.location}/publishers/google/models/imagen-3.0-fast-generate-001`;
+    // Используем ID, который принес успех в Python
+    private readonly geminiModelId = 'gemini-3.1-flash-image-preview'; 
 
     constructor(private readonly filesService: FilesService) {
         const credentialsJson = process.env.GOOGLE_CREDS_JSON;
-        let credentials = credentialsJson ? JSON.parse(credentialsJson) : undefined;
+        const credentials = credentialsJson ? JSON.parse(credentialsJson) : undefined;
 
-        this.client = new PredictionServiceClient({
-            apiEndpoint: `${this.location}-aiplatform.googleapis.com`,
-            credentials,
-            projectId: this.project,
+        this.vertexAI = new VertexAI({ 
+            project: this.project, 
+            location: this.location,
+            googleAuthOptions: { credentials } 
         });
     }
 
     async generate(dto: GenerateImageDto, userId: string) {
-        let endpoint: string;
-        let instancePayload: any;
-        let parametersPayload: any;
+        // Получаем модель Nano Banana 2
+        const model = this.vertexAI.getGenerativeModel({ model: this.geminiModelId });
 
         if (dto.image) {
-            // --- СТАБИЛЬНЫЙ РЕЖИМ РЕМОНТА (Image-to-Image) ---
-            console.log(`[Nano Banana] Стабильный Imagen 3 Generate для: ${userId}`);
-            endpoint = this.generateModel;
-
-            const base64Source = await this.getBase64FromUrl(dto.image);
-
-            // СТРОГО ПО ДОКУМЕНТАЦИИ:
-            instancePayload = {
-                prompt: dto.prompt,
-                image: {
-                    bytesBase64Encoded: base64Source
-                }
-            };
-
-            parametersPayload = {
-                sampleCount: 1,
-                // imagePromptWeight: 
-                // 0.4-0.5 — сохраняет структуру дома, но меняет отделку на "элиту"
-                // 0.8+ — нарисует вообще другой дом.
-                imagePromptWeight: 0.5, 
-                personGeneration: "allow_all",
-                safetySetting: "block_few",
-                addWatermark: false
-            };
+            console.log(`[Nano Banana 2] Режим Редактирования для: ${userId}`);
+            return this.generateWithNano(model, dto, userId);
         } else {
-            // --- РЕЖИМ ТОЛЬКО ТЕКСТ (Fast) ---
-            console.log(`[Imagen 3] Режим Fast для: ${userId}`);
-            endpoint = this.fastModel;
+            console.log(`[Nano Banana 2] Режим Генерации по тексту для: ${userId}`);
+            return this.generateWithNano(model, dto, userId);
+        }
+    }
 
-            instancePayload = { prompt: dto.prompt };
-            parametersPayload = {
-                sampleCount: 1,
-                aspectRatio: "1:1",
-                personGeneration: "allow_all",
-                safetySetting: "block_few",
-                addWatermark: false
-            };
+    private async generateWithNano(model: any, dto: GenerateImageDto, userId: string) {
+        const parts: any[] = [{ text: `TASK: Generate a new high-quality image. ${dto.prompt}` }];
+
+        // Если есть картинка, добавляем её как inlineData (как в Python успехе)
+        if (dto.image) {
+            const base64Source = await this.getBase64FromUrl(dto.image);
+            parts.push({
+                inlineData: {
+                    data: base64Source,
+                    mimeType: 'image/jpeg'
+                }
+            });
         }
 
+        const request = {
+            contents: [{ role: 'user', parts }]
+        };
+
         try {
-            const [response] = await this.client.predict({
-                endpoint: endpoint,
-                instances: [helpers.toValue(instancePayload) as any],
-                parameters: helpers.toValue(parametersPayload) as any,
-            });
-
-            if (!response.predictions || response.predictions.length === 0) {
-                throw new Error('Модель заблокировала результат по соображениям безопасности.');
+            const result = await model.generateContent(request);
+            const response = result.response;
+            
+            // Ищем байты изображения в ответе
+            const imagePart = response.candidates?.[0]?.content?.parts.find((p: any) => p.inlineData);
+            
+            if (!imagePart || !imagePart.inlineData) {
+                // Проверяем, не ответила ли модель текстом (отказ или описание)
+                const textPart = response.candidates?.[0]?.content?.parts.find((p: any) => p.text);
+                throw new Error(textPart?.text || 'Модель не вернула изображение.');
             }
 
-            const result: any = helpers.fromValue(response.predictions[0] as any);
-            // В 002 модели ответ всегда приходит в bytesBase64Encoded
-            const base64Image = result.bytesBase64Encoded;
-
-            if (!base64Image) {
-                throw new Error('Ошибка: в ответе нет данных изображения.');
-            }
-
+            const base64Image = imagePart.inlineData.data;
             const savedFile = await this.filesService.saveAiGeneratedImage(base64Image, userId);
 
             return {
                 status: 'success',
                 processedImage: savedFile.url,
                 metadata: { 
-                    model: dto.image ? 'imagen-3.0-generate' : 'imagen-3.0-fast'
+                    model: this.geminiModelId,
+                    engine: 'Nano Banana 2'
                 }
             };
         } catch (error) {
-            console.error('Vertex AI Error:', error.details || error.message);
-            throw new Error(`Ошибка генерации: ${error.details || error.message}`);
+            console.error('Nano Banana Error:', error.message);
+            throw new Error(`Ошибка генерации: ${error.message}`);
         }
     }
 
     private async getBase64FromUrl(url: string): Promise<string> {
+        // Оптимизируем размер для предотвращения 500 ошибки
         const optimizedUrl = url.includes('cloudinary.com')
-            ? url.replace('/upload/', '/upload/w_1024,c_limit,f_jpg/')
+            ? url.replace('/upload/', '/upload/w_1024,c_limit,q_80,f_jpg/')
             : url;
 
         const response = await axios.get(optimizedUrl, { responseType: 'arraybuffer' });
