@@ -15,7 +15,17 @@ export class AvatarGeneratorService {
     }
 
     async generateAvatar(dto: GenerateAvatarDto, userId: string): Promise<any> {
-        const model = this.genAI.getGenerativeModel({ model: this.modelId });
+        const model = this.genAI.getGenerativeModel({
+            model: this.modelId,
+            generationConfig: {
+                // В 2026 году Nano Banana поддерживает прямое указание размера:
+                // @ts-ignore (если типы SDK еще не обновились)
+                targetWidth: 512,
+                // @ts-ignore
+                targetHeight: 512,
+                candidateCount: 1,
+            }
+        });
 
         try {
             console.log(`[Avatar Gen] Создание аватара для: ${dto.name} (${dto.gender})`);
