@@ -15,53 +15,46 @@ export class AvatarGeneratorService {
     }
 
     async generateAvatar(dto: GenerateAvatarDto, userId: string): Promise<any> {
-        // 1. Очищаем конфиг от несуществующих полей
-        const model = this.genAI.getGenerativeModel({
-            model: this.modelId,
-            // Оставляем только те поля, которые SDK понимает
-            generationConfig: {
-                candidateCount: 1,
-                // responseMimeType: "image/jpeg" // Если SDK поддерживает принудительный формат
-            }
-        });
+        const model = this.genAI.getGenerativeModel({ model: this.modelId });
 
         try {
-            console.log(`[Avatar Gen] Создание аватара для: ${dto.name}`);
+            console.log(`[Avatar Gen] Создание аватара для: ${dto.name} (${dto.gender})`);
 
+            // Загружаем и сжимаем все 3 ракурса
             const [frontBase64, leftBase64, rightBase64] = await Promise.all([
                 this.getBase64FromUrl(dto.imageFront),
                 this.getBase64FromUrl(dto.imageLeft),
                 this.getBase64FromUrl(dto.imageRight),
             ]);
 
-            // 2. Указываем размер прямо в системной инструкции
+            // Формируем запрос с 3-мя фото и инструкцией
             const promptParts = [
-                { text: `TASK: Create a professional 3D avatar. Output resolution: 512x512 pixels.` },
-                { text: `STYLE: Pixar-style, high detail. NAME: ${dto.name}, GENDER: ${dto.gender}.` },
+                { text: `TASK: Create a professional 3D avatar based on these 3 reference photos. Iamge size 256x256` },
+                { text: `NAME: ${dto.name}, GENDER: ${dto.gender}. Style: Realistic Pixar-style character, high detail, studio lighting.` },
                 { inlineData: { data: frontBase64, mimeType: 'image/jpeg' } },
                 { inlineData: { data: leftBase64, mimeType: 'image/jpeg' } },
                 { inlineData: { data: rightBase64, mimeType: 'image/jpeg' } }
             ];
 
             const generationTasks = [1, 2, 3, 4].map(async (i) => {
-                // Добавляем напоминание про размер в каждый запрос
                 const result = await model.generateContent({
-                    contents: [{
-                        role: 'user',
-                        parts: [...promptParts, { text: `Generate variant ${i}. Remember: square 512x512 image.` }]
-                    }]
+                    contents: [{ role: 'user', parts: [...promptParts, { text: `Variant ${i}` }] }]
                 });
-
                 const response = await result.response;
-                const imagePart = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
+                const parts = response.candidates?.[0]?.content?.parts;
+                const imagePart = parts?.find(p => p.inlineData);
 
+                // Защита от undefined (ts 18048)
                 if (!imagePart?.inlineData?.data) {
-                    throw new Error(`Модель не вернула изображение для варианта ${i}`);
+                    throw new Error(`Модель не вернула данные для варианта ${i}`);
                 }
 
                 const base64Image = imagePart.inlineData.data;
+
+                // Сохраняем. Если сервис возвращает массив, берем [0].
                 const savedFile = await this.filesService.saveAiGeneratedImage(base64Image, userId);
 
+                // Безопасное получение URL
                 return Array.isArray(savedFile) ? savedFile[0].url : savedFile.url;
             });
 
@@ -71,7 +64,7 @@ export class AvatarGeneratorService {
                 name: dto.name,
                 gender: dto.gender,
                 imagesURL: finalUrls,
-                metadata: { engine: 'Nano Banana 2', size: '512x512' }
+                metadata: { engine: 'Nano Banana 2 Multi-View' }
             };
 
         } catch (error) {
