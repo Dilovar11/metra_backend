@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
 import { Readable } from 'stream';
 import { v4 as uuidv4 } from 'uuid';
+import sharp = require('sharp');
 
 @Injectable()
 export class FilesService {
@@ -161,24 +162,27 @@ export class FilesService {
   }
 
   async saveAiGeneratedImage(base64Data: string, userId: string) {
-    // 1. Исправляем путь: папка пользователя внутри основного каталога
     const userFolder = `metra_generations/${userId}`;
-
-    // 2. Делаем имя файла уникальным (например, через timestamp или UUID)
-    // Это предотвратит перезапись предыдущих генераций
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const customFileName = `gen_${uniqueSuffix}`;
 
-    // Конвертируем base64 в буфер
     const base64Image = base64Data.replace(/^data:image\/\w+;base64,/, '');
-    const buffer = Buffer.from(base64Image, 'base64');
-
-    const fileMock = {
-      buffer: buffer,
-    } as Express.Multer.File;
+    const initialBuffer = Buffer.from(base64Image, 'base64');
 
     try {
-      // Передаем обновленный userFolder и уникальный customFileName
+      // --- ИЗМЕНЕНИЕ РАЗМЕРА ---
+      const resizedBuffer = await sharp(initialBuffer)
+        .resize(256, 256, {
+          fit: 'cover',      // Заполнит квадрат 256x256, обрезая края если нужно
+          position: 'center' // Центрирует изображение
+        })
+        .toBuffer();
+      // -------------------------
+
+      const fileMock = {
+        buffer: resizedBuffer, // Используем измененный буфер
+      } as Express.Multer.File;
+
       const result = await this.uploadToCloudinary(fileMock, userFolder, customFileName);
 
       return {
@@ -187,7 +191,7 @@ export class FilesService {
         userId: userId
       };
     } catch (error) {
-      throw new Error(`Ошибка сохранения AI фото: ${error.message}`);
+      throw new Error(`Ошибка обработки или сохранения AI фото: ${error.message}`);
     }
   }
 

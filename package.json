@@ -42,6 +42,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "serverless-http": "^4.0.0",
+    "sharp": "^0.34.5",
     "swagger-ui-express": "^4.6.3",
     "typeorm": "^0.3.28",
     "yookassa": "^0.1.1"

@@ -28,13 +28,13 @@ export class AvatarGeneratorController {
     }
   })
   async generateFromImages(
-    @TgUser('id') userId: number, // Получаем ID из проверенного заголовка Telegram
+    @TgUser('id') userId: string, // Получаем ID из проверенного заголовка Telegram
     @Body() dto: GenerateAvatarDto
   ) {
     try {
       // Передаем userId в сервис, если он нужен для именования файлов/папок
       // Если сервис пока не принимает userId, его стоит туда добавить вторым аргументом
-      const generatedImages = await this.avatarService.generateAvatar(dto);
+      const generatedImages = await this.avatarService.generateAvatar(dto, userId);
 
       return {
         success: true,
