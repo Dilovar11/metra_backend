@@ -11,10 +11,10 @@ export class SceneService {
     constructor(
         @InjectRepository(Scene)
         private readonly sceneRepo: Repository<Scene>,
-        
+
         @InjectRepository(SceneCategory) // Добавляем репозиторий категорий
         private readonly categoryRepo: Repository<SceneCategory>,
-        
+
         private fileService: FilesService
     ) { }
 
@@ -25,9 +25,16 @@ export class SceneService {
         // Фильтрация по связанной сущности через ID
         if (categoryId) where.category = { id: categoryId };
 
-        return this.sceneRepo.find({ 
+        return this.sceneRepo.find({
             where,
-            relations: ['category'] // Подгружаем данные категории в ответе
+            relations: ['category'] 
+        });
+    }
+
+    async findOneById(id: number) {
+        return this.sceneRepo.findOne({
+            where: { id },
+            relations: ['category'] 
         });
     }
 
@@ -37,8 +44,8 @@ export class SceneService {
         }
 
         // 1. Ищем категорию в базе данных
-        const category = await this.categoryRepo.findOne({ 
-            where: { id: dto.categoryId } 
+        const category = await this.categoryRepo.findOne({
+            where: { id: dto.categoryId }
         });
 
         if (!category) {
@@ -55,7 +62,6 @@ export class SceneService {
             mode: dto.mode,
             name: dto.name,
             prompt: dto.prompt,
-            description: dto.description,
             image: imageUrl,
             category: category, // Привязываем объект категории
         });
@@ -73,5 +79,5 @@ export class SceneService {
         return { success: true };
     }
 
-    
+
 }

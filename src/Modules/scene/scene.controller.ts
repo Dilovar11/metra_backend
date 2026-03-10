@@ -33,6 +33,12 @@ export class SceneController {
         return this.sceneService.findAll(mode, categoryId);
     }
 
+    @Get(':id')
+    @ApiOperation({ summary: 'Получить одну сцену по ID' })
+    findOne(@Param('id', ParseIntPipe) id: number) {
+        return this.sceneService.findOneById(id);
+    }
+
     @Post()
     @UseInterceptors(FileInterceptor('image'))
     @ApiOperation({
