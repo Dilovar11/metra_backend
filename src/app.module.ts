@@ -16,6 +16,7 @@ import { AuthModule } from './Modules/auth/auth.module';
 import { SceneModule } from './Modules/scene/scene.module';
 import { APP_GUARD } from '@nestjs/core';
 import { TelegramGuard } from './Modules/auth/telegram.guard';
+import { AdminModule } from './Modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { TelegramGuard } from './Modules/auth/telegram.guard';
     TokenBalanceModule,
     TokenTransactionModule,
     SubscriptionModule,
+    AdminModule,
     SupportTicketModule,
   ],
   providers: [
