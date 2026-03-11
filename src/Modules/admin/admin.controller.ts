@@ -7,11 +7,16 @@ import { Public } from '../../Common/decorators/public.decorator';
 @ApiTags('Admin')
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+    constructor(private readonly adminService: AdminService) { }
 
-  @ApiOperation({ summary: 'Получение статистики для админ-панели бота' })
-  @Get('stats')
-  async getStatistics() {
-    return await this.adminService.getStats();
-  }
+    @ApiOperation({ summary: 'Получение статистики для админ-панели бота' })
+    @Get('stats')
+    async getStatistics() {
+        return await this.adminService.getStats();
+    }
+
+    @Get('partner-stats')
+    async getPartnerStats() {
+        return await this.adminService.getPartnerStats();
+    }
 }

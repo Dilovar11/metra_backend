@@ -8,46 +8,69 @@ import { PaymentTransaction } from '../../Entities/payment-transaction';
 
 @Injectable()
 export class AdminService {
-  constructor(
-    @InjectRepository(User) private userRepo: Repository<User>,
-    @InjectRepository(Generation) private genRepo: Repository<Generation>,
-    @InjectRepository(Scene) private sceneRepo: Repository<Scene>,
-    @InjectRepository(PaymentTransaction) private transRepo: Repository<PaymentTransaction>,
-  ) {}
+    constructor(
+        @InjectRepository(User) private userRepo: Repository<User>,
+        @InjectRepository(Generation) private genRepo: Repository<Generation>,
+        @InjectRepository(Scene) private sceneRepo: Repository<Scene>,
+        @InjectRepository(PaymentTransaction) private transRepo: Repository<PaymentTransaction>,
+    ) { }
 
-  async getStats() {
-    const now = new Date();
-    const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    async getStats() {
+        const now = new Date();
+        const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    // 1. Всего пользователей
-    const totalUsers = await this.userRepo.count();
+        // 1. Всего пользователей
+        const totalUsers = await this.userRepo.count();
 
-    // 2. Новых за 24 часа
-    const newUsers24h = await this.userRepo.count({
-      where: { createdAt: MoreThan(dayAgo) },
-    });
+        // 2. Новых за 24 часа
+        const newUsers24h = await this.userRepo.count({
+            where: { createdAt: MoreThan(dayAgo) },
+        });
 
-    // 3. Всего генераций
-    const totalGenerations = await this.genRepo.count();
+        // 3. Всего генераций
+        const totalGenerations = await this.genRepo.count();
 
-    // 4. Всего сцен
-    const totalScenes = await this.sceneRepo.count();
+        // 4. Всего сцен
+        const totalScenes = await this.sceneRepo.count();
 
-    // 5. Выручка и количество покупок (учитываем только статус SUCCESS/PAID)
-    const transactions = await this.transRepo.find({
-      where: { status: 'SUCCESS' }, 
-    });
+        // 5. Выручка и количество покупок (учитываем только статус SUCCESS/PAID)
+        const transactions = await this.transRepo.find({
+            where: { status: 'SUCCESS' },
+        });
 
-    const revenue = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
-    const purchasesCount = transactions.length;
+        const revenue = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
+        const purchasesCount = transactions.length;
 
-    return {
-      totalUsers,
-      newUsers24h,
-      totalGenerations,
-      totalScenes,
-      revenue: parseFloat(revenue.toFixed(2)),
-      purchasesCount,
-    };
-  }
+        return {
+            totalUsers,
+            newUsers24h,
+            totalGenerations,
+            totalScenes,
+            revenue: parseFloat(revenue.toFixed(2)),
+            purchasesCount,
+        };
+    }
+
+    async getPartnerStats() {
+        // 1. Общая сумма начисленных бонусов (25% от транзакций)
+        const transactions = await this.transRepo.find({ where: { status: 'SUCCESS' } });
+        const totalReferralPaid = transactions.reduce((sum, t) => sum + Number(t.referralBonus || 0), 0);
+
+        // 2. Топ рефералов (кто больше всех пригласил)
+        // Делаем через QueryBuilder, так как это сложный запрос
+        const topReferrals = await this.userRepo
+            .createQueryBuilder('user')
+            .leftJoin('user.referrals', 'referral')
+            .select(['user.id', 'user.username', 'user.firstName'])
+            .addSelect('COUNT(referral.id)', 'referralsCount')
+            .groupBy('user.id')
+            .orderBy('referralsCount', 'DESC')
+            .limit(5)
+            .getRawMany();
+
+        return {
+            totalReferralPaid: parseFloat(totalReferralPaid.toFixed(2)),
+            topReferrals: topReferrals.filter(r => r.referralsCount > 0)
+        };
+    }
 }
