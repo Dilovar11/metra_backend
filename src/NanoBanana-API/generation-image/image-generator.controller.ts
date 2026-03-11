@@ -49,7 +49,7 @@ export class ImageGeneratorController {
         return await this.imageService.generate(dto, userId);
     }
 
-
+    
     @Post('animate-image')
     @UsePipes(new ValidationPipe({ transform: true }))
     @ApiOperation({
