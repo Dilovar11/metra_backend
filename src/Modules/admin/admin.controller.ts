@@ -1,7 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Public } from '../../Common/decorators/public.decorator';
 
+@Public()
 @ApiTags('Admin')
 @Controller('admin')
 export class AdminController {
