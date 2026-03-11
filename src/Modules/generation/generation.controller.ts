@@ -2,7 +2,7 @@ import { Controller, Post, Get, Body, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { GenerationService } from './generation.service';
 import { CreateGenerationDto } from './dto/create-generation.dto';
-import { GenerationType } from 'src/Entities/generation.entity';
+import { GenerationType } from '../../Entities/generation.entity';
 import { TgUser } from '../../Common/decorators/user.decorator';
 
 

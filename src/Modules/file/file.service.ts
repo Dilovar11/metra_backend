@@ -25,6 +25,7 @@ export class FilesService {
           folder: folder,
           public_id: customFileName,
           overwrite: true,
+          resource_type: 'auto',
         },
         (error, result) => {
           if (error) return reject(error);
@@ -39,6 +40,7 @@ export class FilesService {
     });
   }
 
+  // Категории сцен
   async saveFileSceneCategory(files: Array<Express.Multer.File>, fileName: string) {
     const userFolder = `metra_files_scene_category`;
     const uploadPromises = files.map((file) => {
@@ -53,6 +55,7 @@ export class FilesService {
     }));
   }
 
+  // Сцены
   async saveFileScene(files: Array<Express.Multer.File>, fileName: string) {
     const userFolder = `metra_files_scene`;
     const uploadPromises = files.map((file) => {
@@ -67,15 +70,14 @@ export class FilesService {
     }));
   }
 
+  // Для аватара
   async saveFileAvatar(files: Array<Express.Multer.File>, userId: string) {
     const userFolder = `metra_files_for_avatars`;
     const uploadPromises = files.map((file, index) => {
       const customFileName = `${userId}${index}`;
       return this.uploadToCloudinary(file, userFolder, customFileName);
     });
-
     const results = await Promise.all(uploadPromises);
-
     return results.map((result, index) => ({
       originalName: files[index].originalname,
       filename: result.public_id,
@@ -84,15 +86,14 @@ export class FilesService {
   }
 
 
+  // Аватары
   async saveFileGeneratedAvatars(files: Array<Express.Multer.File>, userId: string) {
     const userFolder = `metra_avatars/${userId}`;
     const uploadPromises = files.map((file, index) => {
       const customFileName = `${userId}${index}`;
       return this.uploadToCloudinary(file, userFolder, customFileName);
     });
-
     const results = await Promise.all(uploadPromises);
-
     return results.map((result, index) => ({
       originalName: files[index].originalname,
       filename: result.public_id,
@@ -101,11 +102,10 @@ export class FilesService {
   }
 
 
+  // Аватар
   async saveFileGeneratedAvatarByIndex(file: Express.Multer.File, userId: string, index: number) {
-
     const userFolder = `metra_avatars/${userId}`;
     const customFileName = `${userId}${index}`;
-
     try {
       const result = await this.uploadToCloudinary(file, userFolder, customFileName);
       return {
@@ -119,6 +119,8 @@ export class FilesService {
     }
   }
 
+
+  // Для генерации
   async saveFileImage(file: Express.Multer.File, userId: string) {
     const userFolder = `metra_files_for_generations/${userId}`;
     const customFileName = `${userId}`;
@@ -130,6 +132,8 @@ export class FilesService {
     };
   }
 
+
+  // Генерированные изображении
   async saveGeneratedImage(file: Express.Multer.File, userId: string) {
     const userFolder = `metra_generations/${userId}`;
 
@@ -148,27 +152,25 @@ export class FilesService {
   }
 
 
+  // Удалить по id
   async deleteFromCloudinary(publicId: string): Promise<any> {
     return new Promise((resolve, reject) => {
       cloudinary.uploader.destroy(publicId, (error, result) => {
         if (error) {
           return reject(new Error(`Ошибка удаления из Cloudinary: ${error.message}`));
         }
-        // Если файл не найден, Cloudinary вернет result: 'not found', 
-        // но это не считается ошибкой (error будет null)
         resolve(result);
       });
     });
   }
 
+  // Генерированные изображении
   async saveAiGeneratedImage(base64Data: string, userId: string) {
     const userFolder = `metra_generations/${userId}`;
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const customFileName = `gen_${uniqueSuffix}`;
-
     const base64Image = base64Data.replace(/^data:image\/\w+;base64,/, '');
     const initialBuffer = Buffer.from(base64Image, 'base64');
-
     try {
       // --- ИЗМЕНЕНИЕ РАЗМЕРА ---
       const resizedBuffer = await sharp(initialBuffer)
@@ -177,10 +179,34 @@ export class FilesService {
           position: 'center' // Центрирует изображение
         })
         .toBuffer();
-      // -------------------------
-
       const fileMock = {
         buffer: resizedBuffer, // Используем измененный буфер
+      } as Express.Multer.File;
+      const result = await this.uploadToCloudinary(fileMock, userFolder, customFileName);
+      return {
+        filename: result.public_id,
+        url: result.secure_url,
+        userId: userId
+      };
+    } catch (error) {
+      throw new Error(`Ошибка обработки или сохранения AI фото: ${error.message}`);
+    }
+  }
+
+  // Метод для сохранения видео-анимации
+  async saveAiGeneratedVideo(base64Data: string, userId: string) {
+    const userFolder = `metra_generations/${userId}/animations`;
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const customFileName = `anim_${uniqueSuffix}`;
+
+    // Убираем префикс base64 (поддерживаем разные форматы видео)
+    const base64Video = base64Data.replace(/^data:video\/\w+;base64,/, '');
+    const videoBuffer = Buffer.from(base64Video, 'base64');
+
+    try {
+      const fileMock = {
+        buffer: videoBuffer,
+        mimetype: 'video/mp4', // Указываем, что это видео
       } as Express.Multer.File;
 
       const result = await this.uploadToCloudinary(fileMock, userFolder, customFileName);
@@ -191,7 +217,7 @@ export class FilesService {
         userId: userId
       };
     } catch (error) {
-      throw new Error(`Ошибка обработки или сохранения AI фото: ${error.message}`);
+      throw new Error(`Ошибка сохранения AI видео: ${error.message}`);
     }
   }
 
