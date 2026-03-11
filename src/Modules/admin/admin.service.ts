@@ -52,25 +52,44 @@ export class AdminService {
     }
 
     async getPartnerStats() {
-        // 1. Общая сумма начисленных бонусов (25% от транзакций)
-        const transactions = await this.transRepo.find({ where: { status: 'SUCCESS' } });
-        const totalReferralPaid = transactions.reduce((sum, t) => sum + Number(t.referralBonus || 0), 0);
+        try {
+            // 1. Считаем бонусы через QueryBuilder (более эффективно)
+            // Убедись, что 'SUCCESS' — это именно тот статус, который ты записываешь в БД
+            const bonusResult = await this.transRepo
+                .createQueryBuilder('t')
+                .select('SUM(CAST(t.referralBonus AS DECIMAL))', 'total')
+                .where('t.status = :status', { status: 'SUCCESS' })
+                .getRawOne();
 
-        // 2. Топ рефералов (кто больше всех пригласил)
-        // Делаем через QueryBuilder, так как это сложный запрос
-        const topReferrals = await this.userRepo
-            .createQueryBuilder('user')
-            .leftJoin('user.referrals', 'referral')
-            .select(['user.id', 'user.username', 'user.firstName'])
-            .addSelect('COUNT(referral.id)', 'referralsCount')
-            .groupBy('user.id')
-            .orderBy('referralsCount', 'DESC')
-            .limit(5)
-            .getRawMany();
+            const totalReferralPaid = parseFloat(bonusResult.total || 0);
 
-        return {
-            totalReferralPaid: parseFloat(totalReferralPaid.toFixed(2)),
-            topReferrals: topReferrals.filter(r => r.referralsCount > 0)
-        };
+            // 2. Топ рефералов (исправленный запрос)
+            const topReferrals = await this.userRepo
+                .createQueryBuilder('user')
+                .leftJoin('user.referrals', 'referral') // Используем связь, описанную в Entity
+                .select([
+                    'user.id AS id',
+                    'user.username AS username',
+                    'user.firstName AS firstName'
+                ])
+                .addSelect('COUNT(referral.id)', 'referralsCount')
+                .groupBy('user.id')
+                .having('COUNT(referral.id) > 0') // Только те, у кого есть хоть один реферал
+                .orderBy('"referralsCount"', 'DESC') // Кавычки нужны для PostgreSQL, чтобы найти alias
+                .limit(5)
+                .getRawMany();
+
+            return {
+                totalReferralPaid: parseFloat(totalReferralPaid.toFixed(2)),
+                topReferrals: topReferrals.map(r => ({
+                    username: r.username,
+                    firstName: r.firstName,
+                    referralsCount: parseInt(r.referralsCount, 10)
+                }))
+            };
+        } catch (error) {
+            console.error('Partner Stats Error:', error);
+            throw error;
+        }
     }
 }
