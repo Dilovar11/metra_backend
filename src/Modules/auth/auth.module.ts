@@ -6,11 +6,13 @@ import { User } from '../../Entities/user.entity';
 import { Referral } from '../../Entities/referral.entity';
 import { ReferralCode } from '../../Entities/referral_codes';
 import { ReferralModule } from '../referral/referral.module';
+import { TokenBalanceModule } from '../token-balance/token-balance.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Referral, ReferralCode]),
-    ReferralModule
+    ReferralModule,
+    TokenBalanceModule
   ],
   controllers: [AuthController],
   providers: [AuthService],

@@ -27,15 +27,10 @@ export class AvatarGeneratorService {
         const user = await this.userRepository.findOne({ where: { id: userId } });
         if (!user) throw new NotFoundException(`User with ID ${userId} not found`);
 
-        // --- ОБНОВЛЯЕМ ФЛАГ ПОЛЬЗОВАТЕЛЯ ПОСЛЕ УСПЕХА ---
-        user.generatedAvatar = true;
-        console.log('generatedAvatar value:', user.generatedAvatar);
-        console.log('generatedAvatar type:', typeof user.generatedAvatar);
+        //user.generatedAvatar = true;
+        //console.log('generatedAvatar value:', user.generatedAvatar);
+        //console.log('generatedAvatar type:', typeof user.generatedAvatar);
         // Используем update вместо save, чтобы гарантированно обновить поле в базе
-        await this.userRepository.update(userId, {
-            generatedAvatar: true
-        });
-
         // -----------------------------------------------
 
         // --- ЛОГИКА ПРОВЕРКИ ОПЛАТЫ / ПЕРВОЙ ГЕНЕРАЦИИ ---
@@ -44,7 +39,7 @@ export class AvatarGeneratorService {
             // Метод subtractTokens сам выкинет BadRequestException, если токенов не хватит
             await this.tokenBalanceService.subtractTokens(userId, 20, 'Генерация аватара');
         }
-        // Если user.generatedAvatar === false, ничего не списываем (бесплатно первый раз)
+
         // ------------------------------------------------
 
         const model = this.genAI.getGenerativeModel({ model: this.modelId });
@@ -86,10 +81,9 @@ export class AvatarGeneratorService {
             const finalUrls = await Promise.all(generationTasks);
 
             // --- ОБНОВЛЯЕМ ФЛАГ ПОЛЬЗОВАТЕЛЯ ПОСЛЕ УСПЕХА ---
-            //if (user.generatedAvatar === false) {
-            //  user.generatedAvatar = true;
-            //await this.userRepository.save(user);
-            //}
+            await this.userRepository.update(userId, {
+                generatedAvatar: true
+            });
             // -----------------------------------------------
 
             return {
@@ -107,7 +101,7 @@ export class AvatarGeneratorService {
 
     private async getBase64FromUrl(url: string): Promise<string> {
         const optimizedUrl = url.includes('cloudinary.com')
-            ? url.replace('/upload/', '/upload/w_512,c_limit,q_70,f_jpg/') // Сжимаем сильнее, так как фото 3 штуки
+            ? url.replace('/upload/', '/upload/w_512,c_limit,q_70,f_jpg/')
             : url;
         const response = await axios.get(optimizedUrl, { responseType: 'arraybuffer' });
         return Buffer.from(response.data, 'binary').toString('base64');

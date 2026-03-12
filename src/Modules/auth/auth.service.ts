@@ -6,6 +6,7 @@ import { Referral } from '../../Entities/referral.entity';
 import { ReferralCode } from '../../Entities/referral_codes';
 import { RegisterDto } from './dto/register.dto';
 import { ReferralService } from '../referral/referral.service';
+import { TokenBalanceService } from '../token-balance/token-balance.service';
 
 @Injectable()
 export class AuthService {
@@ -13,7 +14,8 @@ export class AuthService {
     @InjectRepository(User) private userRepo: Repository<User>,
     @InjectRepository(Referral) private referralRepo: Repository<Referral>,
     @InjectRepository(ReferralCode) private codeRepo: Repository<ReferralCode>,
-    private referralService: ReferralService
+    private referralService: ReferralService,
+    private tokenBalanceService: TokenBalanceService
   ) { }
 
   async register(dto: RegisterDto) {
@@ -25,22 +27,33 @@ export class AuthService {
       telegramId: dto.telegramId,
       username: dto.username,
       firstName: dto.firstName,
-      lastName: dto.lastName
+      lastName: dto.lastName,
+      generatedAvatar: false
     });
+
     const savedUser = await this.userRepo.save(newUser);
 
+    // 2. СОЗДАЕМ БАЛАНС сразу после регистрации
+    try {
+      await this.tokenBalanceService.create(
+        { balance: 0 },
+        savedUser.id
+      );
+      console.log(`Token balance created for user ${savedUser.id}`);
+    } catch (balanceError) {
+      console.error(`Failed to create balance for ${savedUser.id}:`, balanceError.message);
+    }
+    
     try {
       if (dto.refCode) {
         await this.referralService.trackClick(dto.refCode, savedUser.telegramId);
-
         await this.linkReferral(savedUser, dto.refCode);
       }
       await this.referralService.getMyLink(savedUser.id);
-
-      console.log(`Registration flow completed for user ${savedUser.id}`);
     } catch (e) {
       console.error(`Referral flow error for ${savedUser.id}:`, e.message);
     }
+
     return savedUser;
   }
 

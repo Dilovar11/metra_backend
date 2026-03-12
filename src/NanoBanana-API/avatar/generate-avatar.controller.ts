@@ -3,7 +3,6 @@ import { AvatarGeneratorService } from './generate-avatar.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { GenerateAvatarDto } from './dto/generate-avatar.dto';
 import { TgUser } from '../../Common/decorators/user.decorator';
-import { Public } from '../../Common/decorators/public.decorator';
 
 @ApiTags('Генерация аватара')
 @Controller('avatars')
