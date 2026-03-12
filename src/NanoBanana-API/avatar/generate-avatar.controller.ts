@@ -5,7 +5,6 @@ import { GenerateAvatarDto } from './dto/generate-avatar.dto';
 import { TgUser } from '../../Common/decorators/user.decorator';
 import { Public } from '../../Common/decorators/public.decorator';
 
-@Public()
 @ApiTags('Генерация аватара')
 @Controller('avatars')
 export class AvatarGeneratorController {
