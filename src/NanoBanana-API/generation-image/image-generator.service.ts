@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { FilesService } from '../../Modules/file/file.service';
 import { GenerateImageDto } from './dto/generate-image.dto';
 import axios from 'axios';
+import { TokenBalanceService } from '../../Modules/token-balance/token-balance.service';
 
 @Injectable()
 export class ImageGeneratorService {
@@ -12,12 +13,20 @@ export class ImageGeneratorService {
     // Она генерирует КАРТИНКИ, а не текст.
     private readonly modelId = 'gemini-3.1-flash-image-preview';
 
-    constructor(private readonly filesService: FilesService) {
+    constructor(
+        private readonly filesService: FilesService,
+        private readonly tokenBalanceService: TokenBalanceService
+    ) {
         const apiKey = process.env.GOOGLE_API_KEY || '';
         this.genAI = new GoogleGenerativeAI(apiKey);
     }
 
     async generate(dto: GenerateImageDto, userId: string) {
+
+        // 2. Списываем 5 токенов перед генерацией
+        // Если токенов не хватит, метод выбросит ошибку и код ниже не выполнится
+        await this.tokenBalanceService.subtractTokens(userId, 5, 'Генерация изображения (Интерьер)');
+
         const model = this.genAI.getGenerativeModel({ model: this.modelId });
         let promptParts: any[] = [];
 
@@ -46,6 +55,12 @@ export class ImageGeneratorService {
             const imagePart = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
 
             if (!imagePart || !imagePart.inlineData) {
+                // Если генерация не удалась, можно вернуть токены (опционально)
+                await this.tokenBalanceService.addTokens(userId, 5, 'Возврат: ошибка генерации');
+                throw new Error('Google заблокировал генерацию этой картинки или вернул текст вместо изображения.');
+            }
+
+            if (!imagePart || !imagePart.inlineData) {
                 // Если вдруг модель ответила текстом вместо картинки (бывает при жесткой цензуре)
                 throw new Error('Google заблокировал генерацию этой картинки или вернул текст вместо изображения.');
             }
@@ -62,6 +77,8 @@ export class ImageGeneratorService {
             };
         } catch (error) {
             console.error('Ошибка генерации:', error.message);
+            // Если произошла техническая ошибка, возвращаем токены пользователю
+            await this.tokenBalanceService.addTokens(userId, 5, 'Возврат: техническая ошибка сервера');
             throw new Error(`Ошибка Nano Banana: ${error.message}`);
         }
     }
