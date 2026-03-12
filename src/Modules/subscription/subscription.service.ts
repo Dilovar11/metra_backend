@@ -5,6 +5,9 @@ import { Subscription } from '../../Entities/subscription.entity';
 import { User } from '../../Entities/user.entity';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { LessThan } from 'typeorm';
+
 
 @Injectable()
 export class SubscriptionService {
@@ -15,7 +18,7 @@ export class SubscriptionService {
     @InjectRepository(User)
     private userRepo: Repository<User>,
 
-  ) {}
+  ) { }
 
   async create(userId: string, dto: CreateSubscriptionDto) {
     const user = await this.userRepo.findOne({ where: { id: userId } });
@@ -66,5 +69,24 @@ export class SubscriptionService {
 
     Object.assign(sub, dto);
     return this.subRepo.save(sub);
+  }
+
+  @Cron(CronExpression.EVERY_30_MINUTES) // Будет проверять каждый час
+  async handleExpiredSubscriptions() {
+    console.log('[Cron] Проверка просроченных подписок...');
+
+    const result = await this.subRepo.update(
+      {
+        isActive: true,
+        endsAt: LessThan(new Date()), // Те, у кого дата окончания меньше текущей
+      },
+      {
+        isActive: false,
+      }
+    );
+
+    if (result.affected! > 0) {
+      console.log(`[Cron] Отключено просроченных подписок: ${result.affected}`);
+    }
   }
 }
