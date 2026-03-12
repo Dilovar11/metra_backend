@@ -1,35 +1,55 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { FilesService } from '../../Modules/file/file.service'; // Предполагаю, что он тут
+import { FilesService } from '../../Modules/file/file.service';
 import { GenerateAvatarDto } from './dto/generate-avatar.dto';
 import axios from 'axios';
+import { User } from '../../Entities/user.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { TokenBalanceService } from '../../Modules/token-balance/token-balance.service';
 
 @Injectable()
 export class AvatarGeneratorService {
     private genAI: GoogleGenerativeAI;
     private readonly modelId = 'gemini-3.1-flash-image-preview';
 
-    constructor(private readonly filesService: FilesService) {
+    constructor(
+        private readonly filesService: FilesService,
+        @InjectRepository(User)
+        private userRepository: Repository<User>,
+        private tokenBalanceService: TokenBalanceService,
+    ) {
         const apiKey = process.env.GOOGLE_API_KEY || '';
         this.genAI = new GoogleGenerativeAI(apiKey);
     }
 
     async generateAvatar(dto: GenerateAvatarDto, userId: string): Promise<any> {
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+        if (!user) throw new NotFoundException(`User with ID ${userId} not found`);
+
+        // --- ЛОГИКА ПРОВЕРКИ ОПЛАТЫ / ПЕРВОЙ ГЕНЕРАЦИИ ---
+        if (user.generatedAvatar === true) {
+            // Если уже генерировал раньше — списываем 20 токенов
+            // Метод subtractTokens сам выкинет BadRequestException, если токенов не хватит
+            await this.tokenBalanceService.subtractTokens(userId, 20, 'Генерация аватара');
+        }
+        // Если user.generatedAvatar === false, ничего не списываем (бесплатно первый раз)
+        // ------------------------------------------------
+
         const model = this.genAI.getGenerativeModel({ model: this.modelId });
 
         try {
             console.log(`[Avatar Gen] Создание аватара для: ${dto.name} (${dto.gender})`);
 
-            // Загружаем и сжимаем все 3 ракурса
+            // Загружаем ракурсы
             const [frontBase64, leftBase64, rightBase64] = await Promise.all([
                 this.getBase64FromUrl(dto.imageFront),
                 this.getBase64FromUrl(dto.imageLeft),
                 this.getBase64FromUrl(dto.imageRight),
             ]);
 
-            // Формируем запрос с 3-мя фото и инструкцией
             const promptParts = [
-                { text: `TASK: Create a professional 3D avatar based on these 3 reference photos. Iamge size 256x256` },
+                { text: `TASK: Create a professional 3D avatar based on these 3 reference photos. Image size 256x256` },
                 { text: `NAME: ${dto.name}, GENDER: ${dto.gender}. Style: Realistic Pixar-style character, high detail, studio lighting.` },
                 { inlineData: { data: frontBase64, mimeType: 'image/jpeg' } },
                 { inlineData: { data: leftBase64, mimeType: 'image/jpeg' } },
@@ -41,24 +61,25 @@ export class AvatarGeneratorService {
                     contents: [{ role: 'user', parts: [...promptParts, { text: `Variant ${i}` }] }]
                 });
                 const response = await result.response;
-                const parts = response.candidates?.[0]?.content?.parts;
-                const imagePart = parts?.find(p => p.inlineData);
+                const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
 
-                // Защита от undefined (ts 18048)
                 if (!imagePart?.inlineData?.data) {
                     throw new Error(`Модель не вернула данные для варианта ${i}`);
                 }
 
                 const base64Image = imagePart.inlineData.data;
-
-                // Сохраняем. Если сервис возвращает массив, берем [0].
                 const savedFile = await this.filesService.saveAiGeneratedImage(base64Image, userId);
-
-                // Безопасное получение URL
                 return Array.isArray(savedFile) ? savedFile[0].url : savedFile.url;
             });
 
             const finalUrls = await Promise.all(generationTasks);
+
+            // --- ОБНОВЛЯЕМ ФЛАГ ПОЛЬЗОВАТЕЛЯ ПОСЛЕ УСПЕХА ---
+            if (user.generatedAvatar === false) {
+                user.generatedAvatar = true;
+                await this.userRepository.save(user);
+            }
+            // -----------------------------------------------
 
             return {
                 name: dto.name,

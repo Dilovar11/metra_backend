@@ -39,4 +39,8 @@ export class User {
   @ApiProperty({ example: '2026-01-05T00:00:00.000Z' })
   @CreateDateColumn()
   createdAt: Date;
+
+  @ApiProperty({ example: false })
+  @Column({ default: false })
+  generatedAvatar: boolean;
 }

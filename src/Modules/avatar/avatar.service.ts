@@ -7,6 +7,7 @@ import { CreateAvatarDto } from './dto/create-avatar.dto';
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { SubscriptionPlan } from '../subscription/dto/create-subscription.dto';
+import { TokenBalanceService } from '../token-balance/token-balance.service';
 
 @Injectable()
 export class AvatarService {
@@ -16,28 +17,40 @@ export class AvatarService {
 
     @InjectRepository(User)
     private userRepository: Repository<User>,
-
     private subscriptionService: SubscriptionService,
+    private tokenBalanceService: TokenBalanceService,
   ) { }
 
   async create(userId: string, dto: CreateAvatarDto): Promise<Avatar> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException(`User with ID ${userId} not found`);
 
-    const existingAvatar = await this.avatarRepository.findOne({ where: { user: { id: userId } } });
+    const existingAvatar = await this.avatarRepository.findOne({
+      where: { user: { id: userId } }
+    });
 
-    if (!existingAvatar) {
+    // Если это ПЕРВЫЙ аватар пользователя
+    if (!existingAvatar && user.generatedAvatar === false) {
+      // 1. Создаем подписку на 7 дней
       const now = new Date();
-      const nextMonth = new Date();
-      nextMonth.setMonth(now.getMonth() + 1);
+      const sevenDaysLater = new Date();
+      sevenDaysLater.setDate(now.getDate() + 7);
 
       await this.subscriptionService.create(userId, {
         plan: SubscriptionPlan.BASIC,
         startsAt: now,
-        endsAt: nextMonth,
+        endsAt: sevenDaysLater,
       });
+
+      // 2. Пополняем баланс на 20 токенов (Welcome Bonus)
+      await this.tokenBalanceService.addTokens(
+        userId,
+        20,
+        'Бонус за создание первого аватара'
+      );
     }
 
+    // 3. Создаем сам аватар
     const avatar = this.avatarRepository.create({
       user,
       name: dto.name,
@@ -45,7 +58,7 @@ export class AvatarService {
       imagesURL: dto.imagesURL,
     });
 
-    return this.avatarRepository.save(avatar);
+    return await this.avatarRepository.save(avatar);
   }
 
 
