@@ -29,7 +29,10 @@ export class AvatarGeneratorService {
 
         // --- ОБНОВЛЯЕМ ФЛАГ ПОЛЬЗОВАТЕЛЯ ПОСЛЕ УСПЕХА ---
         user.generatedAvatar = true;
-        await this.userRepository.save(user);
+       // Используем update вместо save, чтобы гарантированно обновить поле в базе
+        await this.userRepository.update(userId, { 
+            generatedAvatar: true 
+        });
 
         // -----------------------------------------------
 
