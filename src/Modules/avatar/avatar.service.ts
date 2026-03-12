@@ -30,7 +30,7 @@ export class AvatarService {
     });
 
     // Если это ПЕРВЫЙ аватар пользователя
-    if (!existingAvatar && user.generatedAvatar === false) {
+    if (!existingAvatar) {
       // 1. Создаем подписку на 7 дней
       const now = new Date();
       const sevenDaysLater = new Date();

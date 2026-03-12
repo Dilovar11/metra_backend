@@ -27,6 +27,12 @@ export class AvatarGeneratorService {
         const user = await this.userRepository.findOne({ where: { id: userId } });
         if (!user) throw new NotFoundException(`User with ID ${userId} not found`);
 
+        // --- ОБНОВЛЯЕМ ФЛАГ ПОЛЬЗОВАТЕЛЯ ПОСЛЕ УСПЕХА ---
+        user.generatedAvatar = true;
+        await this.userRepository.save(user);
+
+        // -----------------------------------------------
+
         // --- ЛОГИКА ПРОВЕРКИ ОПЛАТЫ / ПЕРВОЙ ГЕНЕРАЦИИ ---
         if (user.generatedAvatar === true) {
             // Если уже генерировал раньше — списываем 20 токенов
@@ -75,10 +81,10 @@ export class AvatarGeneratorService {
             const finalUrls = await Promise.all(generationTasks);
 
             // --- ОБНОВЛЯЕМ ФЛАГ ПОЛЬЗОВАТЕЛЯ ПОСЛЕ УСПЕХА ---
-            if (user.generatedAvatar === false) {
-                user.generatedAvatar = true;
-                await this.userRepository.save(user);
-            }
+            //if (user.generatedAvatar === false) {
+              //  user.generatedAvatar = true;
+                //await this.userRepository.save(user);
+            //}
             // -----------------------------------------------
 
             return {
