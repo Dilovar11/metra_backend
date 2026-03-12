@@ -29,9 +29,11 @@ export class AvatarGeneratorService {
 
         // --- ОБНОВЛЯЕМ ФЛАГ ПОЛЬЗОВАТЕЛЯ ПОСЛЕ УСПЕХА ---
         user.generatedAvatar = true;
-       // Используем update вместо save, чтобы гарантированно обновить поле в базе
-        await this.userRepository.update(userId, { 
-            generatedAvatar: true 
+        console.log('generatedAvatar value:', user.generatedAvatar);
+        console.log('generatedAvatar type:', typeof user.generatedAvatar);
+        // Используем update вместо save, чтобы гарантированно обновить поле в базе
+        await this.userRepository.update(userId, {
+            generatedAvatar: true
         });
 
         // -----------------------------------------------
@@ -85,8 +87,8 @@ export class AvatarGeneratorService {
 
             // --- ОБНОВЛЯЕМ ФЛАГ ПОЛЬЗОВАТЕЛЯ ПОСЛЕ УСПЕХА ---
             //if (user.generatedAvatar === false) {
-              //  user.generatedAvatar = true;
-                //await this.userRepository.save(user);
+            //  user.generatedAvatar = true;
+            //await this.userRepository.save(user);
             //}
             // -----------------------------------------------
 
