@@ -8,9 +8,11 @@ import { Repository } from 'typeorm';
 import { User } from '../../Entities/user.entity';
 import { PaymentTransaction } from '../../Entities/payment-transaction';
 import { TokenBalanceService } from '../token-balance/token-balance.service';
-import { v4 as uuidv4 } from 'uuid'; 
+import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import { Referral } from '../../Entities/referral.entity';
+
+const TELEGRAM_API_URL = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}`;
 
 @Injectable()
 export class TokenTransactionService {
@@ -57,7 +59,8 @@ export class TokenTransactionService {
       referralBonus: referralBonus,
       user: user,
       inviter: user.inviter || null,
-      status: 'PENDING'
+      status: 'PENDING',
+      type: "YOOKASSA"
     });
 
     await this.transactionRepo.save(transaction);
@@ -136,7 +139,8 @@ export class TokenTransactionService {
       referralBonus: referralBonus,
       user: user,
       inviter: user.inviter || null,
-      status: 'PENDING'
+      status: 'PENDING',
+      type: "YOOKASSA"
     });
 
     await this.transactionRepo.save(transaction);
@@ -265,6 +269,152 @@ export class TokenTransactionService {
     }
   }
 
+
+  //--------------------------------------------------------------------------------
+  // ОПЛАТА ЧЕРЕЗ STARS
+  //--------------------------------------------------------------------------------
+
+  async createStarsOrder(userId: string, tokensAmount: number) {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['inviter'],
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    // Карта цен в Звездах (XTR)
+    // Пример: 100 токенов = 10 звезд
+    const starsPriceMap = { 100: 10, 300: 25, 1000: 80, 5000: 350 };
+    const amountValue = starsPriceMap[tokensAmount];
+
+    if (!amountValue) throw new BadRequestException('Invalid tokens amount');
+
+    let referralBonus = 0.0;
+    if (user.inviter) {
+      // 25% бонуса, если вы начисляете его тоже в звездах или эквиваленте
+      referralBonus = amountValue * 0.25;
+    }
+
+    // 1. Создаем транзакцию в нашей БД
+    const transaction = this.transactionRepo.create({
+      amount: amountValue,
+      tokens: tokensAmount,
+      referralBonus: referralBonus,
+      user: user,
+      inviter: user.inviter || null,
+      status: 'PENDING',
+      type: "STARS"
+    });
+
+    await this.transactionRepo.save(transaction);
+
+    // 2. Формируем инвойс-ссылку через Telegram API
+    try {
+      const response = await axios.post(`${TELEGRAM_API_URL}/createInvoiceLink`, {
+        title: `Пополнение: ${tokensAmount} токенов`,
+        description: `Добавление токенов в Metra через Telegram Stars`,
+        payload: transaction.id.toString(), // Это вернется к нам в вебхуке
+        currency: 'XTR',
+        prices: [{ label: 'Токены', amount: amountValue }],
+      });
+
+      if (!response.data.ok) {
+        throw new Error(response.data.description);
+      }
+
+      return {
+        url: response.data.result,
+        transactionId: transaction.id,
+      };
+    } catch (error) {
+      console.error('Telegram Stars Error:', error.message);
+      throw new BadRequestException('Ошибка при создании платежа Stars');
+    }
+  }
+
+  // Метод для подтверждения транзакции после успешной оплаты Stars
+  // (Вызывается из вашего контроллера вебхуков Telegram)
+  async handleStarsPayment(payload: string, telegramPaymentId: string) {
+    const transaction = await this.transactionRepo.findOne({
+      where: { id: payload },
+      relations: ['user', 'inviter'],
+    });
+
+    if (!transaction || transaction.status !== 'PENDING') return;
+
+    // Используем вашу готовую логику начисления
+    transaction.status = 'SUCCESS';
+    transaction.externalId = telegramPaymentId;
+    await this.transactionRepo.save(transaction);
+
+    await this.tokenBalanceService.addTokens(transaction.user.id, transaction.tokens);
+
+    if (transaction.inviter && transaction.referralBonus > 0) {
+      await this.tokenBalanceService.addBonus(transaction.inviter.id, transaction.referralBonus);
+    }
+
+    return { success: true };
+  }
+
+
+  async handlePreCheckoutQuery(preCheckoutQueryId: string) {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    try {
+      await axios.post(`https://api.telegram.org/bot${botToken}/answerPreCheckoutQuery`, {
+        pre_checkout_query_id: preCheckoutQueryId,
+        ok: true, // true означает, что товар в наличии и всё хорошо
+      });
+    } catch (error) {
+      console.error('Error answering pre_checkout_query:', error.message);
+    }
+  }
+
+
+  async handleTelegramUpdate(update: any) {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+
+    // 1. ОТВЕТ НА ПРЕДПРОВЕРКУ (ОБЯЗАТЕЛЬНО)
+    if (update.pre_checkout_query) {
+      await axios.post(`https://api.telegram.org/bot${botToken}/answerPreCheckoutQuery`, {
+        pre_checkout_query_id: update.pre_checkout_query.id,
+        ok: true,
+      });
+      return { ok: true };
+    }
+
+    // 2. ПОДТВЕРЖДЕНИЕ УСПЕШНОЙ ОПЛАТЫ
+    const message = update.message;
+    if (message && message.successful_payment) {
+      const transactionId = message.successful_payment.invoice_payload; // тот ID, что мы передавали при создании ссылки
+      const telegramChargeId = message.successful_payment.telegram_payment_charge_id;
+
+      // Вызываем вашу общую логику начисления (как для ЮKassa)
+      await this.completeStarsTransaction(transactionId, telegramChargeId);
+    }
+
+    return { ok: true };
+  }
+
+  private async completeStarsTransaction(transactionId: string, externalId: string) {
+    const transaction = await this.transactionRepo.findOne({
+      where: { id: transactionId },
+      relations: ['user', 'inviter']
+    });
+
+    if (!transaction || transaction.status !== 'PENDING') return;
+
+    transaction.status = 'SUCCESS';
+    transaction.externalId = externalId;
+    await this.transactionRepo.save(transaction);
+
+    // Начисляем токены пользователю
+    await this.tokenBalanceService.addTokens(transaction.user.id, transaction.tokens);
+
+    // Начисляем бонус рефералу
+    if (transaction.inviter && transaction.referralBonus > 0) {
+      await this.tokenBalanceService.addBonus(transaction.inviter.id, transaction.referralBonus);
+    }
+  }
 
 
   async findAll() {

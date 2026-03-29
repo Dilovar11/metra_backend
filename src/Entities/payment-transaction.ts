@@ -24,6 +24,9 @@ export class PaymentTransaction {
   @Column({ default: 'PENDING' })
   status: string;
 
+  @Column({ default: 'YOOKASSA' })
+  type: string; // Сюда будем писать 'YOOKASSA' или 'STARS'
+
   @Column({ nullable: true })
   externalId: string;
 
