@@ -37,7 +37,7 @@ export class TokenTransactionService {
   }
 
   // Вспомогательный метод для получения актуальных цен
-  private async getSettings() {
+  public async getSettings() {
     let settings = await this.settingsRepo.findOne({ where: { id: 1 } });
     if (!settings) {
       // Если записи нет, создаем дефолтную
