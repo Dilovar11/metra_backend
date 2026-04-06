@@ -12,6 +12,13 @@ import { Public } from 'src/Common/decorators/public.decorator';
 export class TokenTransactionController {
   constructor(private readonly service: TokenTransactionService) { }
 
+  @Public() // Разрешаем всем видеть актуальные цены
+  @Get('settings')
+  @ApiOperation({ summary: 'Получить текущие настройки цен за 1 токен' })
+  async getSettings() {
+    return this.service.getSettings();
+  }
+
   @Patch('settings/update')
   @UseGuards(TelegramGuard) // Защищаем гвардом
   @ApiOperation({ summary: 'Обновить глобальные цены (только для админа)' })
