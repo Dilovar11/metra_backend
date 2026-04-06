@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Query, HttpCode, HttpStatus, BadRequestException, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, HttpCode, HttpStatus, BadRequestException, UseGuards, Patch } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { TokenTransactionService } from './payment-transaction.service';
 import { TgUser } from '../../Common/decorators/user.decorator';
@@ -11,6 +11,25 @@ import { Public } from 'src/Common/decorators/public.decorator';
 @Controller('token-transactions')
 export class TokenTransactionController {
   constructor(private readonly service: TokenTransactionService) { }
+
+  @Patch('settings/update')
+  @UseGuards(TelegramGuard) // Защищаем гвардом
+  @ApiOperation({ summary: 'Обновить глобальные цены (только для админа)' })
+  async updateSettings(
+    @TgUser('id') userId: string, // Получаем ID того, кто делает запрос
+    @Body('tokenPriceRub') tokenPriceRub: number,
+    @Body('tokenPriceStars') tokenPriceStars: number,
+  ) {
+    // Передаем userId в сервис для проверки прав
+    return this.service.updateSettings(userId, tokenPriceRub, tokenPriceStars);
+  }
+
+  @Post('settings/reset')
+  @UseGuards(TelegramGuard)
+  @ApiOperation({ summary: 'Сбросить цены к стандартным (только для админа)' })
+  async resetSettings(@TgUser('id') userId: string) {
+    return this.service.resetSettings(userId);
+  }
 
   @UseGuards(TelegramGuard)
   @Post('create-order')
@@ -88,6 +107,27 @@ export class TokenTransactionController {
       throw new BadRequestException('tokensAmount обязателен');
     }
     return this.service.createStarsOrder(userId, Number(tokensAmount));
+  }
+
+  @UseGuards(TelegramGuard)
+  @Post('create-stars-subscription-order')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Создать платеж по подписке через Telegram Stars' })
+  @ApiQuery({
+    name: 'amount',
+    required: true,
+    enum: [990, 2490, 4990],
+    description: 'Сумма пакета подписки (эквивалент в рублях)'
+  })
+  @ApiResponse({ status: 201, description: 'Возвращает invoice_link от Telegram Stars' })
+  async createStarsSubscriptionOrder(
+    @TgUser('id') userId: string,
+    @Query('amount') amount: string
+  ) {
+    if (!amount) {
+      throw new BadRequestException('amount обязателен');
+    }
+    return this.service.createSubscriptionStar(userId, Number(amount));
   }
 
   @Public()

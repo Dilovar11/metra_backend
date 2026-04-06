@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,6 +12,7 @@ import { TokenBalanceService } from '../token-balance/token-balance.service';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import { Referral } from '../../Entities/referral.entity';
+import { PaymentSettings } from 'src/Entities/payment-settings.entity';
 
 const TELEGRAM_API_URL = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}`;
 
@@ -27,11 +29,64 @@ export class TokenTransactionService {
 
     @InjectRepository(User) private userRepo: Repository<User>,
 
+    @InjectRepository(PaymentSettings) private settingsRepo: Repository<PaymentSettings>,
+
     private tokenBalanceService: TokenBalanceService
 
   ) {
   }
 
+  // Вспомогательный метод для получения актуальных цен
+  private async getSettings() {
+    let settings = await this.settingsRepo.findOne({ where: { id: 1 } });
+    if (!settings) {
+      // Если записи нет, создаем дефолтную
+      settings = this.settingsRepo.create({ id: 1, tokenPriceRub: 3.9, tokenPriceStars: 0.1 });
+      await this.settingsRepo.save(settings);
+    }
+    return settings;
+  }
+
+  // Вспомогательный метод проверки прав админа
+  private checkAdminAccess(userId: string) {
+    const adminId = process.env.ADMIN_TELEGRAM_ID;
+    if (userId !== adminId) {
+      throw new ForbiddenException('У вас нет прав для изменения настроек цен');
+    }
+  }
+
+  // 1. Изменение цен с проверкой ID
+  async updateSettings(userId: string, tokenPriceRub?: number, tokenPriceStars?: number) {
+    this.checkAdminAccess(userId); // Проверка!
+
+    let settings = await this.getSettings();
+
+    if (tokenPriceRub !== undefined) settings.tokenPriceRub = tokenPriceRub;
+    if (tokenPriceStars !== undefined) settings.tokenPriceStars = tokenPriceStars;
+
+    await this.settingsRepo.save(settings);
+    return {
+      message: 'Цены обновлены админом',
+      settings
+    };
+  }
+
+  // 2. Сброс цен с проверкой ID
+  async resetSettings(userId: string) {
+    this.checkAdminAccess(userId); // Проверка!
+
+    let settings = await this.getSettings();
+
+    // Твои стандартные значения
+    settings.tokenPriceRub = 8.25;
+    settings.tokenPriceStars = 3.33;
+
+    await this.settingsRepo.save(settings);
+    return {
+      message: 'Цены сброшены админом к дефолтным',
+      settings
+    };
+  }
 
 
   async createAcquiringOrder(userId: string, tokensAmount: number) {
@@ -43,8 +98,10 @@ export class TokenTransactionService {
 
     if (!user) throw new NotFoundException('User not found');
 
-    const priceMap = { 100: 390, 300: 990, 1000: 2790, 5000: 11990 };
-    const amountValue = priceMap[tokensAmount];
+    const settings = await this.getSettings();
+    // Динамический расчет: количество * цену из БД
+    const amountValue = tokensAmount * settings.tokenPriceRub;
+
     if (!amountValue) throw new BadRequestException('Invalid tokens amount');
 
     // Исправлено: добавляем referralBonus, чтобы база не ругалась
@@ -123,16 +180,22 @@ export class TokenTransactionService {
 
     if (!user) throw new NotFoundException('User not found');
 
-    const tokenMap = { 990: 120, 2490: 350, 4990: 800 };
-    const tokensAmount = tokenMap[amountValue];
+    // 1. Получаем динамические настройки цен
+    const settings = await this.getSettings();
 
-    if (!tokensAmount) throw new BadRequestException('Недопустимая сумма платежа');
+    const tokensAmount = Math.floor(amountValue / settings.tokenPriceRub);
 
+    if (tokensAmount <= 0) {
+      throw new BadRequestException('Сумма платежа слишком мала для покупки токенов');
+    }
+
+    // 3. Рассчитываем реферальный бонус (25% от суммы в рублях)
     let referralBonus = 0.00;
     if (user.inviter) {
       referralBonus = amountValue * 0.25;
     }
 
+    // 4. Создаем транзакцию в БД
     const transaction = this.transactionRepo.create({
       amount: amountValue,
       tokens: tokensAmount,
@@ -158,7 +221,7 @@ export class TokenTransactionService {
         type: 'redirect',
         return_url: 'https://metra-front.vercel.app/profile',
       },
-      description: `Пополнение: ${tokensAmount} токенов (Пакет ${amountValue} руб.)`,
+      description: `Подписка: ${tokensAmount} токенов (Пакет ${amountValue} руб.)`,
       metadata: {
         order_id: transaction.id,
       }
@@ -188,7 +251,7 @@ export class TokenTransactionService {
       };
 
     } catch (error) {
-      console.error('Yookassa API Error:', error.response?.data || error.message);
+      console.error('Yookassa Subscription API Error:', error.response?.data || error.message);
       throw new BadRequestException(
         error.response?.data?.description || 'Ошибка при связи с ЮKassa'
       );
@@ -283,16 +346,16 @@ export class TokenTransactionService {
     if (!user) throw new NotFoundException('User not found');
 
     // Карта цен в Звездах (XTR)
-    // Пример: 100 токенов = 10 звезд
-    const starsPriceMap = { 100: 10, 300: 25, 1000: 80, 5000: 350 };
-    const amountValue = starsPriceMap[tokensAmount];
+    const settings = await this.getSettings();
+    // Расчет в звездах
+    const amountValue = Math.round(tokensAmount * settings.tokenPriceStars);
 
     if (!amountValue) throw new BadRequestException('Invalid tokens amount');
 
     let referralBonus = 0.0;
     if (user.inviter) {
       // 25% бонуса, если вы начисляете его тоже в звездах или эквиваленте
-      referralBonus = amountValue * 0.25;
+      referralBonus = 0;
     }
 
     // 1. Создаем транзакцию в нашей БД
@@ -329,6 +392,78 @@ export class TokenTransactionService {
     } catch (error) {
       console.error('Telegram Stars Error:', error.message);
       throw new BadRequestException('Ошибка при создании платежа Stars');
+    }
+  }
+
+
+  async createSubscriptionStar(userId: string, amountValueRub: number) {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['inviter'],
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    // 1. Получаем настройки цен из БД
+    const settings = await this.getSettings();
+
+    // 2. Рассчитываем количество токенов на основе пришедшей суммы в рублях
+    // Например: 990 руб / 8.25 (цена за токен) = 120 токенов
+    const tokensAmount = Math.floor(amountValueRub / settings.tokenPriceRub);
+
+    if (tokensAmount <= 0) {
+      throw new BadRequestException('Сумма слишком мала для покупки токенов');
+    }
+
+    // 3. Рассчитываем итоговую стоимость в Звездах (XTR)
+    // Например: 120 токенов * 3.33 (цена в звездах) = 400 звезд
+    const starsAmount = Math.round(tokensAmount * settings.tokenPriceStars);
+
+    // 4. Расчет реферального бонуса (25%)
+    // Бонус считается в звездах, так как тип транзакции STARS
+    let referralBonus = 0.0;
+    if (user.inviter) {
+      referralBonus = 0;
+    }
+
+    // 5. Создаем транзакцию в БД
+    const transaction = this.transactionRepo.create({
+      amount: starsAmount,        // Сумма в звездах
+      tokens: tokensAmount,       // Количество токенов
+      referralBonus: referralBonus,
+      user: user,
+      inviter: user.inviter || null,
+      status: 'PENDING',
+      type: "STARS"
+    });
+
+    await this.transactionRepo.save(transaction);
+
+    // 6. Генерация ссылки через Telegram API
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    try {
+      const response = await axios.post(`https://api.telegram.org/bot${botToken}/createInvoiceLink`, {
+        title: `Подписка: ${tokensAmount} токенов`,
+        description: `Премиум пакет токенов Metra (${starsAmount} Stars)`,
+        payload: transaction.id.toString(),
+        currency: 'XTR',
+        prices: [{
+          label: `Пакет ${tokensAmount} токенов`,
+          amount: starsAmount // Должно быть целым числом
+        }],
+      });
+
+      if (!response.data.ok) {
+        throw new Error(response.data.description);
+      }
+
+      return {
+        url: response.data.result,
+        transactionId: transaction.id,
+      };
+    } catch (error) {
+      console.error('Telegram Subscription Stars Error:', error.response?.data || error.message);
+      throw new BadRequestException('Ошибка при создании платежа в Telegram Stars');
     }
   }
 
